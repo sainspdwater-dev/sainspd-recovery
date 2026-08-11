@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STATUS PEMULIHAN BEKALAN AIR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .active-tab { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
+        .stretch-btn { transition: all 0.2s ease-in-out; }
+        .stretch-btn:hover { transform: scale(1.03); }
+        #map { height: 500px; width: 100%; border-radius: 0.5rem; z-index: 1; }
+        .modal { z-index: 1000; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased">
+
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900 bg-opacity-75 z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid mb-4"></div>
+        <p id="loading-text" class="text-lg font-semibold tracking-wide">Loading...</p>
+    </div>
+
+    <div id="custom-toast" class="fixed bottom-5 right-5 z-50 hidden transform translate-y-2 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-sm flex items-center space-x-3">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-msg">Maklumat berjaya dikemaskini.</span>
+    </div>
+
+    <header class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">STATUS PEMULIHAN BEKALAN AIR</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Port Dickson</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-3 md:mt-0">
+                <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs font-medium">
+                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-emerald-400">LIVE</span>
+                </div>
+                <span id="last-updated" class="text-xs text-slate-300">Last Updated: --</span>
+                <button onclick="manualRefresh()" id="refresh-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
+                    <i class="fa-solid fa-rotate"></i><span>REFRESH</span>
+                </button>
+                <button onclick="logout()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>LOG KELUAR</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex space-x-2 overflow-x-auto">
+            <button onclick="switchTab('fisik')" id="nav-fisik" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap active-tab">[ STATUS KERJA FIZIKAL ]</button>
+            <button onclick="switchTab('linggi')" id="nav-linggi" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ LOJI LINGGI SUPPLY ]</button>
+            <button onclick="switchTab('sawah')" id="nav-sawah" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ LOJI SAWAH RAJA ]</button>
+            <button onclick="switchTab('seremban')" id="nav-seremban" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ SEREMBAN BARAT ]</button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- TAB FIZIKAL -->
+        <section id="tab-fisik" class="space-y-6 tab-content">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-blue-600"><p class="text-xs font-semibold text-slate-400 uppercase">Jumlah Tugasan</p><h3 id="kpi-tugas" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-emerald-600"><p class="text-xs font-semibold text-slate-400 uppercase">Siap (Ikut Jadual)</p><h3 id="kpi-ontime" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-rose-600"><p class="text-xs font-semibold text-slate-400 uppercase">Lewat / Tertangguh</p><h3 id="kpi-lewat" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-amber-500"><p class="text-xs font-semibold text-slate-400 uppercase">Sedang Berjalan</p><h3 id="kpi-inprogress" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-orange-500"><p class="text-xs font-semibold text-slate-400 uppercase">Berjalan & Lewat</p><h3 id="kpi-berjalan-lewat" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-indigo-600"><p class="text-xs font-semibold text-slate-400 uppercase">Purata % Semua Kerja</p><h3 id="kpi-purata" class="text-2xl font-black text-slate-800 mt-1">0.00%</h3></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-1">
+                    <h3 class="text-sm font-bold text-slate-700 mb-4">Pecahan Status Tugasan</h3><div class="relative h-64"><canvas id="chartFisikStatus"></canvas></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
+                    <h3 class="text-sm font-bold text-slate-700 mb-4">Analisis Tempoh (Jam): Baseline vs Actual</h3><div class="relative h-64"><canvas id="chartFisikDuration"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 font-bold text-slate-700">Senarai Kerja Tapak</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center border-collapse text-sm">
+                        <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                            <tr><th class="p-3 border-b">TARIKH</th><th class="p-3 border-b">BASELINE FINISH</th><th class="p-3 border-b">BUTIRAN KERJA</th><th class="p-3 border-b">PERATUS SIAP KERJA</th><th class="p-3 border-b">ACTUAL START</th><th class="p-3 border-b">ACTUAL FINISH</th><th class="p-3 border-b">ACTUAL DURATION</th><th class="p-3 border-b">STATUS</th><th class="p-3 border-b">UPDATE</th></tr>
+                        </thead>
+                        <tbody id="fisik-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB LRA -->
+        <section id="tab-lra-container" class="space-y-6 tab-content hidden">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div><h3 class="text-sm font-bold text-slate-700">Penapis Mengikut Secondary Supply</h3><p class="text-xs text-slate-500">Pilih secondary supply untuk memaparkan data spesifik</p></div>
+                <div><select id="secondary-filter" onchange="onSecondaryFilterChange()" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-64 focus:outline-none focus:border-blue-500"><option value="ALL">SEMUA SECONDARY SUPPLY</option></select></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-blue-600"><p class="text-xs font-semibold text-slate-400 uppercase">Bilangan Kawasan</p><h3 id="kpi-kawasan" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-sky-600"><p class="text-xs font-semibold text-slate-400 uppercase">Kawasan Recovery</p><h3 id="kpi-kawasan-recovery" class="text-lg font-black text-slate-800 mt-1">0 / 0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-teal-600"><p class="text-xs font-semibold text-slate-400 uppercase">Akaun Recovery</p><h3 id="kpi-akaun-recovery" class="text-lg font-black text-slate-800 mt-1">0 / 0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-amber-600"><p class="text-xs font-semibold text-slate-400 uppercase">Jumlah Penggunaan</p><h3 id="kpi-penggunaan" class="text-lg font-black text-slate-800 mt-1">0 m³/day</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-purple-600"><p class="text-xs font-semibold text-slate-400 uppercase">% Recovery</p><h3 id="kpi-recovery" class="text-2xl font-black text-slate-800 mt-1">0.00%</h3></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Recovery % Mengikut Secondary Supply</h3><div class="relative h-72"><canvas id="chartRecovery"></canvas></div></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Analisis Penggunaan (m³/day) Mengikut Secondary Supply</h3><div class="relative h-72"><canvas id="chartUsage"></canvas></div></div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-700"><i class="fa-solid fa-map-location-dot text-blue-600 mr-2"></i>Peta Sempadan & Status Pemulihan</h3>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 shadow-sm">
+                            <span class="font-bold text-slate-500 mr-1">Petunjuk:</span>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span><span>≤ 50%</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span><span>≤ 80%</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-lime-500 inline-block"></span><span>≤ 95%</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span><span>100%</span></div>
+                        </div>
+                        <button onclick="locateUser()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-sm"><i class="fa-solid fa-location-crosshairs"></i><span>MY LOCATION</span></button>
+                    </div>
+                </div>
+                <div id="map"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL KEMASKINI -->
+    <div id="modal-update" class="modal hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl w-full max-w-xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 id="modal-title" class="text-lg font-bold text-slate-800">KEMASKINI STATUS KERJA</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+            <input type="hidden" id="modal-row-index">
+            <div id="lock-warning" class="hidden bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center space-x-2"><i class="fa-solid fa-lock text-amber-600"></i><span>Kerja ini telah selesai dan dikunci.</span></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div><label class="font-bold block mb-1">TARIKH (Read-only)</label><input type="text" id="m-tarikh" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold block mb-1">BASELINE START (Read-only)</label><input type="text" id="m-base-start" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div class="md:col-span-2"><label class="font-bold block mb-1">BUTIRAN KERJA (Read-only)</label><input type="text" id="m-butiran" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold block mb-1">BASELINE FINISH (Read-only)</label><input type="text" id="m-base-finish" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold block mb-1">ACTUAL DURATION (Read-only)</label><input type="text" id="m-durasi" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">PERATUS SIAP KERJA (%) *</label><input type="number" id="m-peratus" min="0" max="100" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">STATUS *</label><input type="text" id="m-status" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL START</label><input type="datetime-local" id="m-act-start" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL FINISH</label><input type="datetime-local" id="m-act-finish" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35" onchange="checkActualFinishInput()"></div>
+            </div>
+            <div class="border-t pt-4 flex justify-between gap-2">
+                <div class="flex gap-2">
+                    <button id="btn-save" onclick="saveUpdate()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SAVE</button>
+                    <button onclick="copyText()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold"><i class="fa-solid fa-copy mr-1"></i> COPY</button>
+                    <button onclick="whatsappShare()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold"><i class="fa-brands fa-whatsapp mr-1"></i> WHATSAPP</button>
+                </div>
+                <button onclick="closeModal()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold">TUTUP</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // URL Cloudflare anda telah dimasukkan siap-siap di sini
+        const API_URL = "https://sains-pd-api.apiz1335.workers.dev";
+        
+        const KML_BASE_URL = "https://raw.githubusercontent.com/apiz1335-cmd/kml-water-supply-data-6/main/";
+        let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
+        let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
+        let refreshInterval = null; let timerInterval = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.href = 'index.html'; return; }
+            fetchData(true);
+            refreshInterval = setInterval(() => fetchData(false), 300000);
+            timerInterval = setInterval(() => { if (activeTabName === 'fisik') renderPhysicalWork(); }, 60000); 
+        });
+
+        function logout() { sessionStorage.removeItem('pd_water_auth_token'); window.location.href = 'index.html'; }
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-msg').innerText = message;
+            document.getElementById('toast-icon').className = isError ? "fa-solid fa-circle-exclamation text-rose-400 text-base" : "fa-solid fa-circle-check text-emerald-400 text-base";
+            toast.classList.remove('hidden', 'translate-y-2', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-2', 'opacity-0'); setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
+        }
+        function showLoading(show) { document.getElementById('loading-screen').style.display = show ? 'flex' : 'none'; }
+        
+        async function fetchData(isInitial) {
+            if (isInitial) showLoading(true);
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "getDashboardData" }) });
+                const res = await response.json();
+                if (res && res.success) {
+                    globalData = res.data || []; globalDataFizikal = res.dataFizikal || [];
+                    document.getElementById('last-updated').innerText = "Last Updated: " + (res.lastUpdated || '--');
+                    if (isInitial && res.b1Value) {
+                        const val = res.b1Value.toUpperCase();
+                        if (val.includes("LINGGI")) activeTabName = 'linggi'; else if (val.includes("SAWAH")) activeTabName = 'sawah'; else if (val.includes("SEREMBAN") || val.includes("NGOI")) activeTabName = 'seremban';
+                    }
+                    switchTab(activeTabName, true);
+                }
+            } catch (err) { console.error(err); } finally { if (isInitial) showLoading(false); }
+        }
+
+        async function manualRefresh() {
+            const btn = document.getElementById('refresh-btn'); btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i><span>MENGEKEMASKINI...</span>`;
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "getDashboardData" }) });
+                const res = await response.json();
+                if (res && res.success) {
+                    globalData = res.data || []; globalDataFizikal = res.dataFizikal || [];
+                    document.getElementById('last-updated').innerText = "Last Updated: " + (res.lastUpdated || '--');
+                    switchTab(activeTabName, true);
+                }
+            } catch (err) { console.error(err); }
+            btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>REFRESH</span>`;
+        }
+
+        async function saveUpdate() {
+            let rowNumber = parseInt(document.getElementById('modal-row-index').value, 10);
+            let peratusVal = document.getElementById('m-peratus').value.trim();
+            if (peratusVal !== "") { let num = parseFloat(peratusVal); if (isNaN(num) || num < 0 || num > 100) { showToast("Sila masukkan Peratus 0 - 100.", true); return; } }
+            
+            let formData = {
+                peratus: peratusVal, status: document.getElementById('m-status').value.trim(),
+                actualStart: document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : "",
+                actualFinish: document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : ""
+            };
+            const btn = document.getElementById('btn-save'); let originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> MENYIMPAN...`;
+            
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "updatePhysicalWork", rowNumber: rowNumber, formData: formData }) });
+                const res = await response.json();
+                if (res && res.success) { showToast("Maklumat dikemaskini."); closeModal(); manualRefresh(); } else { showToast("Ralat: " + (res ? res.error : 'Unknown'), true); }
+            } catch (err) { showToast("Ralat kemaskini: " + err, true); }
+            btn.disabled = false; btn.innerHTML = originalText;
+        }
+
+        function switchTab(tabKey, force = false) {
+            if (activeTabName === tabKey && !force) return; activeTabName = tabKey;
+            ['fisik', 'linggi', 'sawah', 'seremban'].forEach(k => { const btn = document.getElementById(`nav-${k}`); if (btn) btn.classList.remove('active-tab'); });
+            const activeBtn = document.getElementById(`nav-${tabKey}`); if (activeBtn) activeBtn.classList.add('active-tab');
+            const fisikSec = document.getElementById('tab-fisik'); const lraSec = document.getElementById('tab-lra-container');
+            if (tabKey === 'fisik') { fisikSec.classList.remove('hidden'); lraSec.classList.add('hidden'); renderPhysicalWork(); } 
+            else { fisikSec.classList.add('hidden'); lraSec.classList.remove('hidden'); renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
+        }
+
+        function parseCustomDate(str) {
+            if (!str) return null; let d = new Date(str); if (!isNaN(d.getTime())) return d;
+            let cleanStr = String(str).trim(); let parts = cleanStr.split(/[-/ :]/);
+            if (parts.length >= 3) {
+                let day = parseInt(parts[0], 10); let month = parseInt(parts[1], 10) - 1; let year = parseInt(parts[2], 10);
+                let hour = parts[3] ? parseInt(parts[3], 10) : 0; let min = parts[4] ? parseInt(parts[4], 10) : 0;
+                if (cleanStr.toUpperCase().includes('PM') && hour < 12) hour += 12;
+                if (cleanStr.toUpperCase().includes('AM') && hour === 12) hour = 0;
+                let parsed = new Date(year, month, day, hour, min, 0); if (!isNaN(parsed.getTime())) return parsed;
+            } return null;
+        }
+
+        function formatToDMY(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return str || '-'; return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
+        
+        function formatToDMYHM(str) {
+            let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return str || '-';
+            let hr = d.getHours(); let ampm = hr >= 12 ? 'PM' : 'AM'; hr = hr % 12; hr = hr ? hr : 12; 
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(hr).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ampm}`;
+        }
+        
+        function formatToDatetimeLocal(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return ''; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+        function formatDurationText(diffMs) { if (diffMs < 0) diffMs = 0; let totalMins = Math.floor(diffMs / (1000 * 60)); return `${Math.floor(totalMins / (60 * 24))} hari ${Math.floor((totalMins % (60 * 24)) / 60)} jam`; }
+
+        function renderPhysicalWork() {
+            if (!globalDataFizikal || globalDataFizikal.length === 0) return;
+            let totalTugas = 0, onTime = 0, lewat = 0, inProgress = 0, berjalanLewat = 0, totalPercentSum = 0, percentCount = 0;
+            let labels = [], baselineData = [], actualData = [], tbodyHtml = '';
+            let startIndex = (globalDataFizikal[0] && String(globalDataFizikal[0][0]).toUpperCase() !== 'TARIKH') ? 0 : 1;
+            let now = new Date().getTime();
+
+            for(let i = startIndex; i < globalDataFizikal.length; i++) {
+                let row = globalDataFizikal[i]; if(!row || !row[1]) continue; 
+                totalTugas++; let status = String(row[8] || '').trim().toUpperCase(); let rawPeratus = row[9]; let pctValue = 0;
+                
+                if (rawPeratus !== null && rawPeratus !== undefined && rawPeratus !== '') {
+                    let num = parseFloat(String(rawPeratus).replace('%', '').trim());
+                    if (!isNaN(num)) { pctValue = (num > 0 && num <= 1) ? num * 100 : num; if (pctValue > 100) pctValue = 100; if (pctValue < 0) pctValue = 0; totalPercentSum += pctValue; percentCount++; }
+                }
+
+                let baselineFinishDate = parseCustomDate(row[3]); let actualStartDate = parseCustomDate(row[4]); let actualFinishDate = parseCustomDate(row[5]);
+                let isRunning = (!actualFinishDate || isNaN(actualFinishDate.getTime()));
+                if (isRunning && baselineFinishDate && !isNaN(baselineFinishDate.getTime()) && now > baselineFinishDate.getTime()) berjalanLewat++;
+                if(status.includes('LEWAT')) lewat++; else if(status.includes('SIAP') || status.includes('JADUAL')) onTime++; else inProgress++;
+                
+                let durationDisplay = '-', durationHours = 0;
+                if (actualFinishDate && !isNaN(actualFinishDate.getTime()) && actualStartDate && !isNaN(actualStartDate.getTime())) {
+                    let diffMs = actualFinishDate.getTime() - actualStartDate.getTime(); durationDisplay = formatDurationText(diffMs); durationHours = diffMs / 3600000;
+                } else {
+                    if (baselineFinishDate && !isNaN(baselineFinishDate.getTime())) {
+                        if (now > baselineFinishDate.getTime()) {
+                            durationDisplay = `<span class="text-rose-600 font-bold">${formatDurationText(now - baselineFinishDate.getTime())} LEWAT</span>`;
+                            durationHours = (baselineFinishDate.getTime() - (actualStartDate ? actualStartDate.getTime() : now)) / 3600000 + (now - baselineFinishDate.getTime()) / 3600000;
+                        } else { durationDisplay = `<span class="text-blue-600 font-medium">Baki ${formatDurationText(baselineFinishDate.getTime() - now)} lagi</span>`; durationHours = 0; }
+                    } else if (actualStartDate && !isNaN(actualStartDate.getTime())) {
+                        durationDisplay = `<span class="text-amber-600 font-semibold">${formatDurationText(now - actualStartDate.getTime())} (Live)</span>`; durationHours = (now - actualStartDate.getTime()) / 3600000;
+                    } else { durationDisplay = row[7] || '-'; }
+                }
+
+                labels.push(row[1].length > 25 ? row[1].substring(0, 25) + '...' : row[1]);
+                baselineData.push((String(row[6] || '0').match(/(\d+)/) ? parseInt(String(row[6] || '0').match(/(\d+)/)[1]) * 24 : 0)); actualData.push(Math.round(durationHours));
+                
+                let sb = status.includes('LEWAT') ? 'bg-rose-100 text-rose-700' : (status.includes('SIAP') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700');
+                let pctDisplay = (percentCount > 0 && rawPeratus !== null && rawPeratus !== '') ? `${Math.round(pctValue)}%` : '-';
+                tbodyHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-3 text-center text-slate-600">${formatToDMY(row[0])}</td><td class="p-3 text-center text-slate-600">${formatToDMYHM(row[3])}</td>
+                    <td class="p-3 text-center font-semibold text-slate-800">${row[1]}</td><td class="p-3 text-center font-bold text-blue-600">${pctDisplay}</td>
+                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[4])}</td><td class="p-3 text-center text-slate-600">${row[5] ? formatToDMYHM(row[5]) : '<span class="text-amber-500 italic">Masih Berjalan</span>'}</td>
+                    <td class="p-3 text-center font-bold">${durationDisplay}</td><td class="p-3 text-center"><span class="${sb} px-2 py-1 rounded text-[10px] font-bold uppercase">${row[8]||'SEDANG BERJALAN'}</span></td>
+                    <td class="p-3 text-center"><button onclick="openUpdateModal(${i + 1})" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow">UPDATE</button></td></tr>`;
+            }
+            document.getElementById('kpi-tugas').innerText = totalTugas; document.getElementById('kpi-ontime').innerText = onTime; document.getElementById('kpi-lewat').innerText = lewat;
+            document.getElementById('kpi-inprogress').innerText = inProgress; document.getElementById('kpi-berjalan-lewat').innerText = berjalanLewat;
+            document.getElementById('kpi-purata').innerText = (percentCount > 0 ? (totalPercentSum / percentCount) : 0).toFixed(2) + "%"; document.getElementById('fisik-table-body').innerHTML = tbodyHtml;
+            renderFisikCharts(onTime, lewat, inProgress, labels, baselineData, actualData);
+        }
+
+        function openUpdateModal(rowNumber) {
+            let row = globalDataFizikal[rowNumber - 1]; if (!row) return;
+            document.getElementById('modal-row-index').value = rowNumber; document.getElementById('m-tarikh').value = formatToDMY(row[0]);
+            document.getElementById('m-base-start').value = formatToDMYHM(row[2]); document.getElementById('m-base-finish').value = formatToDMYHM(row[3]);
+            document.getElementById('m-butiran').value = row[1] || ''; document.getElementById('m-durasi').value = row[7] || '';
+            let rawPct = row[9]; let valPct = '';
+            if (rawPct !== null && rawPct !== '') { let num = parseFloat(String(rawPct).replace('%', '').trim()); if (!isNaN(num)) valPct = (num > 0 && num <= 1) ? Math.round(num * 100) : Math.round(num); }
+            document.getElementById('m-peratus').value = valPct; document.getElementById('m-status').value = row[8] || '';
+            document.getElementById('m-act-start').value = formatToDatetimeLocal(row[4]); document.getElementById('m-act-finish').value = formatToDatetimeLocal(row[5]);
+            setModalLockState((row[5] !== "" && row[5] !== null && row[5] !== undefined)); document.getElementById('modal-update').classList.remove('hidden');
+        }
+
+        function checkActualFinishInput() { if (document.getElementById('m-act-finish').value) { let p = document.getElementById('m-peratus'), s = document.getElementById('m-status'); if (!p.value || p.value < 100) p.value = 100; if (!s.value || s.value.toUpperCase() === 'SEDANG BERJALAN') s.value = 'SIAP'; } }
+        
+        function setModalLockState(isLocked) {
+            ['m-peratus','m-status','m-act-start','m-act-finish'].forEach(id => { let el = document.getElementById(id); el.disabled = isLocked; if(isLocked) el.classList.add('bg-slate-100','text-slate-500'); else el.classList.remove('bg-slate-100','text-slate-500'); });
+            let btn = document.getElementById('btn-save'); btn.disabled = isLocked;
+            if(isLocked){ btn.classList.add('opacity-55','cursor-not-allowed'); document.getElementById('lock-warning').classList.remove('hidden'); }
+            else { btn.classList.remove('opacity-55','cursor-not-allowed'); document.getElementById('lock-warning').classList.add('hidden'); }
+        }
+
+        function closeModal() { document.getElementById('modal-update').classList.add('hidden'); }
+        function generateShareText() { return `*TARIKH* - ${document.getElementById('m-tarikh').value}\n*BUTIRAN KERJA* - ${document.getElementById('m-butiran').value}\n*BASELINE FINISH* - ${document.getElementById('m-base-finish').value}\n*PERATUS KERJA SIAP* - ${document.getElementById('m-peratus').value}%\n*ACTUAL START* - ${document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : ''}\n*ACTUAL FINISH* - ${document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : ''}\n*ACTUAL DURATION* - ${document.getElementById('m-durasi').value}`; }
+        function copyText() { navigator.clipboard.writeText(generateShareText()).then(() => showToast("Salinan Berjaya!")).catch(e => showToast("Ralat salin", true)); }
+        function whatsappShare() { window.open(`https://wa.me/?text=${encodeURIComponent(generateShareText())}`, '_blank'); }
+
+        function renderFisikCharts(onTime, lewat, inProgress, labels, baselineData, actualData) {
+            if (chartFisikStatusInst) chartFisikStatusInst.destroy();
+            chartFisikStatusInst = new Chart(document.getElementById('chartFisikStatus').getContext('2d'), { type: 'doughnut', data: { labels: ['Siap', 'Lewat', 'Berjalan'], datasets: [{ data: [onTime, lewat, inProgress], backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'] }] }, options: { maintainAspectRatio: false } });
+            if (chartFisikDurInst) chartFisikDurInst.destroy();
+            chartFisikDurInst = new Chart(document.getElementById('chartFisikDuration').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Baseline', data: baselineData, backgroundColor: '#cbd5e1' }, { label: 'Actual', data: actualData, backgroundColor: '#3b82f6' }] }, options: { maintainAspectRatio: false } });
+        }
+
+        function renderLraDashboard(key) {
+            let allRows = [];
+            for (let i = 4; i < globalData.length; i++) {
+                let r = globalData[i]; if (!r || (!r[0] && !r[1])) continue;
+                let isMatch = false, lraVal = String(r[0]||'').toUpperCase(), kolamVal = String(r[1]||'').toUpperCase();
+                if (key === 'seremban' && (lraVal.includes("NGOI") || kolamVal.includes("SEREMBAN BARAT"))) isMatch = true;
+                else if (key === 'linggi' && lraVal.includes("LINGGI") && !lraVal.includes("NGOI") && !kolamVal.includes("SEREMBAN BARAT")) isMatch = true;
+                else if (key === 'sawah' && lraVal.includes("SAWAH") && !lraVal.includes("NGOI") && !kolamVal.includes("SEREMBAN BARAT")) isMatch = true;
+                
+                if (isMatch) {
+                    let statusStr = String(r[8]||'').toUpperCase(), statusVal = (r[8]===true || statusStr==='TRUE' || statusStr==='DONE' || statusStr==='1') ? 100 : (parseFloat(statusStr.replace(/[^0-9.]/g, ''))||0);
+                    if (statusVal > 100) statusVal = 100;
+                    allRows.push({ lra: r[0], kolam: r[1], secondary: r[2]||'General', kawasan: r[3], akaun: parseFloat(r[6])||0, penggunaan: parseFloat(r[7])||0, statusVal: statusVal });
+                }
+            }
+            
+            const secondarySet = new Set(); allRows.forEach(r => secondarySet.add(r.secondary));
+            const filterSelect = document.getElementById('secondary-filter');
+            if (filterSelect) {
+                let currentVal = filterSelect.value, optionsHtml = `<option value="ALL">SEMUA SECONDARY SUPPLY</option>`;
+                Array.from(secondarySet).sort().forEach(sec => optionsHtml += `<option value="${sec}">${sec}</option>`);
+                filterSelect.innerHTML = optionsHtml; filterSelect.value = secondarySet.has(currentVal) ? currentVal : 'ALL';
+            }
+            
+            let filteredRows = (filterSelect && filterSelect.value !== 'ALL') ? allRows.filter(r => r.secondary === filterSelect.value) : allRows;
+            let secondaryMap = {}, lraTotalUsage = 0, lraWeightedSum = 0;
+            
+            filteredRows.forEach(r => {
+                let w = r.penggunaan * (r.statusVal / 100), sec = r.secondary;
+                if (!secondaryMap[sec]) secondaryMap[sec] = { totalUsage: 0, weightedStatusSum: 0 };
+                secondaryMap[sec].totalUsage += r.penggunaan; secondaryMap[sec].weightedStatusSum += w;
+                lraTotalUsage += r.penggunaan; lraWeightedSum += w;
+            });
+            
+            Object.keys(secondaryMap).forEach(sec => secondaryMap[sec].recoveryPct = secondaryMap[sec].totalUsage > 0 ? (secondaryMap[sec].weightedStatusSum / secondaryMap[sec].totalUsage) * 100 : 0);
+            
+            document.getElementById('kpi-kawasan').innerText = filteredRows.length;
+            document.getElementById('kpi-kawasan-recovery').innerText = `${filteredRows.filter(r => r.statusVal >= 100).length} / ${filteredRows.length}`;
+            document.getElementById('kpi-akaun-recovery').innerText = `${filteredRows.filter(r => r.statusVal >= 100).reduce((s, x) => s + x.akaun, 0).toLocaleString()} / ${filteredRows.reduce((s, x) => s + x.akaun, 0).toLocaleString()}`;
+            document.getElementById('kpi-penggunaan').innerText = (lraTotalUsage / 30).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " m³/day";
+            document.getElementById('kpi-recovery').innerText = (lraTotalUsage > 0 ? (lraWeightedSum / lraTotalUsage) * 100 : 0).toFixed(2) + "%";
+            
+            renderSecondaryCharts(secondaryMap); renderMap(filteredRows);
+        }
+
+        function renderSecondaryCharts(secondaryMap) {
+            const labels = Object.keys(secondaryMap);
+            if (chartRecInstance) chartRecInstance.destroy();
+            chartRecInstance = new Chart(document.getElementById('chartRecovery').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Recovery %', data: labels.map(s => secondaryMap[s].recoveryPct), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { max: 100 } } } });
+            if (chartUseInstance) chartUseInstance.destroy();
+            chartUseInstance = new Chart(document.getElementById('chartUsage').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Penggunaan', data: labels.map(s => secondaryMap[s].totalUsage / 30), backgroundColor: '#10b981' }] }, options: { maintainAspectRatio: false } });
+        }
+
+        function fetchKmlWithFallback(names, callback) {
+            if (names.length === 0) return;
+            fetch(KML_BASE_URL + encodeURIComponent(names.shift())).then(res => { if(!res.ok) throw new Error(); return res.text(); }).then(callback).catch(() => fetchKmlWithFallback(names, callback));
+        }
+
+        function renderMap(rows) {
+            if (!map) { map = L.map('map').setView([2.52, 101.95], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); }
+            geoLayers.forEach(l => map.removeLayer(l)); geoLayers = [];
+            rows.forEach(r => {
+                let cLra = r.lra.trim(), cKolam = r.kolam.trim(), cSec = r.secondary.trim(), cKaw = r.kawasan.trim();
+                let names = [`${cLra}_${cKolam}_${cSec}_${cKaw}.kml`, `${cLra}_${cKolam}_${cSec} ${cKaw}.kml`, `${cLra}_${cKolam}_${cSec}.kml`, `${cLra}_${cKolam}_${cKaw}.kml`, `${cLra}_${cKolam}.kml`];
+                fetchKmlWithFallback(names, (txt) => {
+                    let coords = new DOMParser().parseFromString(txt, "text/xml").getElementsByTagName("coordinates");
+                    for (let n of coords) {
+                        let ll = n.textContent.trim().split(/\s+/).map(p => { let pt = p.split(','); return pt.length >= 2 ? [parseFloat(pt[1]), parseFloat(pt[0])] : null; }).filter(Boolean);
+                        if (ll.length > 0) {
+                            let col = r.statusVal <= 50 ? '#ef4444' : (r.statusVal <= 80 ? '#eab308' : (r.statusVal <= 95 ? '#84cc16' : '#22c55e'));
+                            let poly = L.polygon(ll, {color: col, weight: 3, fill: false}).addTo(map);
+                            poly.bindPopup(`<div class="p-2 space-y-1"><h4 class="font-bold">${r.lra}</h4><p class="text-xs"><b>Kolam:</b> ${r.kolam}</p><p class="text-xs"><b>Kawasan:</b> ${r.kawasan||'-'}</p><p class="text-xs"><b>Status:</b> <span class="font-bold">${r.statusVal}%</span></p></div>`);
+                            geoLayers.push(poly);
+                        }
+                    }
+                });
+            });
+        }
+        function locateUser() { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { map.setView([pos.coords.latitude, pos.coords.longitude], 15); L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(map).bindPopup("Lokasi Anda").openPopup(); }); }
+    </script>
+</body>
+</html>
