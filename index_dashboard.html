@@ -165,22 +165,45 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // URL Cloudflare anda telah dimasukkan siap-siap di sini
         const API_URL = "https://sains-pd-api.apiz1335.workers.dev";
-        
         const KML_BASE_URL = "https://raw.githubusercontent.com/apiz1335-cmd/kml-water-supply-data-6/main/";
         let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
+        
+        let currentDataVersion = "0"; // Menyimpan timestamp versi data terkini
 
         document.addEventListener("DOMContentLoaded", () => {
             if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.href = 'index.html'; return; }
             fetchData(true);
-            refreshInterval = setInterval(() => fetchData(false), 300000);
+            
+            // OPTIMISASI: Smart Polling setiap 15 saat hanya untuk semak versi perubahan
+            refreshInterval = setInterval(checkVersionAndFetch, 15000); 
             timerInterval = setInterval(() => { if (activeTabName === 'fisik') renderPhysicalWork(); }, 60000); 
         });
 
+        // OPTIMISASI: Logik Smart Polling
+        async function checkVersionAndFetch() {
+            try {
+                const response = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                    body: JSON.stringify({ action: "checkVersion" }) 
+                });
+                const res = await response.json();
+                if (res && res.success && res.version) {
+                    if (currentDataVersion !== "0" && currentDataVersion !== res.version) {
+                        currentDataVersion = res.version;
+                        fetchData(false); // Tarik data baru di latar belakang (senyap)
+                    } else if (currentDataVersion === "0") {
+                        currentDataVersion = res.version;
+                    }
+                }
+            } catch (err) {}
+        }
+
         function logout() { sessionStorage.removeItem('pd_water_auth_token'); window.location.href = 'index.html'; }
+        
         function showToast(message, isError = false) {
             const toast = document.getElementById('custom-toast');
             document.getElementById('toast-msg').innerText = message;
@@ -188,6 +211,7 @@
             toast.classList.remove('hidden', 'translate-y-2', 'opacity-0');
             setTimeout(() => { toast.classList.add('translate-y-2', 'opacity-0'); setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
         }
+        
         function showLoading(show) { document.getElementById('loading-screen').style.display = show ? 'flex' : 'none'; }
         
         async function fetchData(isInitial) {
@@ -209,15 +233,7 @@
 
         async function manualRefresh() {
             const btn = document.getElementById('refresh-btn'); btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i><span>MENGEKEMASKINI...</span>`;
-            try {
-                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "getDashboardData" }) });
-                const res = await response.json();
-                if (res && res.success) {
-                    globalData = res.data || []; globalDataFizikal = res.dataFizikal || [];
-                    document.getElementById('last-updated').innerText = "Last Updated: " + (res.lastUpdated || '--');
-                    switchTab(activeTabName, true);
-                }
-            } catch (err) { console.error(err); }
+            await fetchData(false);
             btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>REFRESH</span>`;
         }
 
@@ -263,13 +279,11 @@
         }
 
         function formatToDMY(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return str || '-'; return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
-        
         function formatToDMYHM(str) {
             let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return str || '-';
             let hr = d.getHours(); let ampm = hr >= 12 ? 'PM' : 'AM'; hr = hr % 12; hr = hr ? hr : 12; 
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(hr).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ampm}`;
         }
-        
         function formatToDatetimeLocal(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return ''; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
         function formatDurationText(diffMs) { if (diffMs < 0) diffMs = 0; let totalMins = Math.floor(diffMs / (1000 * 60)); return `${Math.floor(totalMins / (60 * 24))} hari ${Math.floor((totalMins % (60 * 24)) / 60)} jam`; }
 
@@ -352,11 +366,27 @@
         function copyText() { navigator.clipboard.writeText(generateShareText()).then(() => showToast("Salinan Berjaya!")).catch(e => showToast("Ralat salin", true)); }
         function whatsappShare() { window.open(`https://wa.me/?text=${encodeURIComponent(generateShareText())}`, '_blank'); }
 
+        // OPTIMISASI: Soft Refresh Chart.js (Mengelakkan Kelipan/Flicker dengan menggunakan update() berbanding destroy())
         function renderFisikCharts(onTime, lewat, inProgress, labels, baselineData, actualData) {
-            if (chartFisikStatusInst) chartFisikStatusInst.destroy();
-            chartFisikStatusInst = new Chart(document.getElementById('chartFisikStatus').getContext('2d'), { type: 'doughnut', data: { labels: ['Siap', 'Lewat', 'Berjalan'], datasets: [{ data: [onTime, lewat, inProgress], backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'] }] }, options: { maintainAspectRatio: false } });
-            if (chartFisikDurInst) chartFisikDurInst.destroy();
-            chartFisikDurInst = new Chart(document.getElementById('chartFisikDuration').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Baseline', data: baselineData, backgroundColor: '#cbd5e1' }, { label: 'Actual', data: actualData, backgroundColor: '#3b82f6' }] }, options: { maintainAspectRatio: false } });
+            if (chartFisikStatusInst) {
+                chartFisikStatusInst.data.datasets[0].data = [onTime, lewat, inProgress];
+                chartFisikStatusInst.update();
+            } else {
+                chartFisikStatusInst = new Chart(document.getElementById('chartFisikStatus').getContext('2d'), { 
+                    type: 'doughnut', data: { labels: ['Siap', 'Lewat', 'Berjalan'], datasets: [{ data: [onTime, lewat, inProgress], backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'] }] }, options: { maintainAspectRatio: false } 
+                });
+            }
+
+            if (chartFisikDurInst) {
+                chartFisikDurInst.data.labels = labels;
+                chartFisikDurInst.data.datasets[0].data = baselineData;
+                chartFisikDurInst.data.datasets[1].data = actualData;
+                chartFisikDurInst.update();
+            } else {
+                chartFisikDurInst = new Chart(document.getElementById('chartFisikDuration').getContext('2d'), { 
+                    type: 'bar', data: { labels: labels, datasets: [{ label: 'Baseline', data: baselineData, backgroundColor: '#cbd5e1' }, { label: 'Actual', data: actualData, backgroundColor: '#3b82f6' }] }, options: { maintainAspectRatio: false } 
+                });
+            }
         }
 
         function renderLraDashboard(key) {
@@ -404,12 +434,29 @@
             renderSecondaryCharts(secondaryMap); renderMap(filteredRows);
         }
 
+        // OPTIMISASI: Soft Refresh untuk graf LRA
         function renderSecondaryCharts(secondaryMap) {
             const labels = Object.keys(secondaryMap);
-            if (chartRecInstance) chartRecInstance.destroy();
-            chartRecInstance = new Chart(document.getElementById('chartRecovery').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Recovery %', data: labels.map(s => secondaryMap[s].recoveryPct), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { max: 100 } } } });
-            if (chartUseInstance) chartUseInstance.destroy();
-            chartUseInstance = new Chart(document.getElementById('chartUsage').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Penggunaan', data: labels.map(s => secondaryMap[s].totalUsage / 30), backgroundColor: '#10b981' }] }, options: { maintainAspectRatio: false } });
+            
+            if (chartRecInstance) {
+                chartRecInstance.data.labels = labels;
+                chartRecInstance.data.datasets[0].data = labels.map(s => secondaryMap[s].recoveryPct);
+                chartRecInstance.update();
+            } else {
+                chartRecInstance = new Chart(document.getElementById('chartRecovery').getContext('2d'), { 
+                    type: 'bar', data: { labels: labels, datasets: [{ label: 'Recovery %', data: labels.map(s => secondaryMap[s].recoveryPct), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { max: 100 } } } 
+                });
+            }
+
+            if (chartUseInstance) {
+                chartUseInstance.data.labels = labels;
+                chartUseInstance.data.datasets[0].data = labels.map(s => secondaryMap[s].totalUsage / 30);
+                chartUseInstance.update();
+            } else {
+                chartUseInstance = new Chart(document.getElementById('chartUsage').getContext('2d'), { 
+                    type: 'bar', data: { labels: labels, datasets: [{ label: 'Penggunaan', data: labels.map(s => secondaryMap[s].totalUsage / 30), backgroundColor: '#10b981' }] }, options: { maintainAspectRatio: false } 
+                });
+            }
         }
 
         function fetchKmlWithFallback(names, callback) {
