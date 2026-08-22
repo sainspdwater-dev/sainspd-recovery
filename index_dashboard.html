@@ -25,7 +25,7 @@
 
     <div id="custom-toast" class="fixed bottom-5 right-5 z-50 hidden transform translate-y-2 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-sm flex items-center space-x-3">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
-        <span id="toast-msg">Maklumat berjaya dikemaskini.</span>
+        <span id="toast-msg">Selesai Kemaskini</span>
     </div>
 
     <header class="bg-slate-900 text-white shadow-md">
@@ -148,9 +148,15 @@
                 <div><label class="font-bold block mb-1">BASELINE FINISH (Read-only)</label><input type="text" id="m-base-finish" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
                 <div><label class="font-bold block mb-1">ACTUAL DURATION (Read-only)</label><input type="text" id="m-durasi" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
                 <div><label class="font-bold text-blue-700 block mb-1">PERATUS SIAP KERJA (%) *</label><input type="number" id="m-peratus" min="0" max="100" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
-                <div><label class="font-bold text-blue-700 block mb-1">STATUS *</label><input type="text" id="m-status" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
+                <div>
+                    <label class="font-bold text-blue-700 block mb-1">STATUS *</label>
+                    <select id="m-status" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35" onchange="checkStatusChange()">
+                        <option value="Sedang Dijalankan">Sedang Dijalankan</option>
+                        <option value="Siap">Siap</option>
+                    </select>
+                </div>
                 <div><label class="font-bold text-blue-700 block mb-1">ACTUAL START</label><input type="datetime-local" id="m-act-start" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
-                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL FINISH</label><input type="datetime-local" id="m-act-finish" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35" onchange="checkActualFinishInput()"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL FINISH *</label><input type="datetime-local" id="m-act-finish" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35" onchange="checkActualFinishInput()"></div>
             </div>
             <div class="border-t pt-4 flex justify-between gap-2">
                 <div class="flex gap-2">
@@ -171,18 +177,23 @@
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
         
-        let currentDataVersion = "0"; // Menyimpan timestamp versi data terkini
+        let currentDataVersion = "0";
 
         document.addEventListener("DOMContentLoaded", () => {
-            if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.href = 'index.html'; return; }
+            if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.replace('index.html'); return; }
             fetchData(true);
             
-            // OPTIMISASI: Smart Polling setiap 15 saat hanya untuk semak versi perubahan
             refreshInterval = setInterval(checkVersionAndFetch, 15000); 
             timerInterval = setInterval(() => { if (activeTabName === 'fisik') renderPhysicalWork(); }, 60000); 
         });
 
-        // OPTIMISASI: Logik Smart Polling
+        // Kawalan Keselamatan: Elakkan pengguna kembali menggunakan butang Back selepas logout
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted || !sessionStorage.getItem('pd_water_auth_token')) {
+                window.location.replace('index.html');
+            }
+        });
+
         async function checkVersionAndFetch() {
             try {
                 const response = await fetch(API_URL, { 
@@ -194,7 +205,7 @@
                 if (res && res.success && res.version) {
                     if (currentDataVersion !== "0" && currentDataVersion !== res.version) {
                         currentDataVersion = res.version;
-                        fetchData(false); // Tarik data baru di latar belakang (senyap)
+                        fetchData(false); 
                     } else if (currentDataVersion === "0") {
                         currentDataVersion = res.version;
                     }
@@ -202,7 +213,10 @@
             } catch (err) {}
         }
 
-        function logout() { sessionStorage.removeItem('pd_water_auth_token'); window.location.href = 'index.html'; }
+        function logout() { 
+            sessionStorage.removeItem('pd_water_auth_token'); 
+            window.location.replace('index.html'); 
+        }
         
         function showToast(message, isError = false) {
             const toast = document.getElementById('custom-toast');
@@ -237,23 +251,49 @@
             btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>REFRESH</span>`;
         }
 
+        function onSecondaryFilterChange() {
+            renderLraDashboard(activeTabName);
+        }
+
         async function saveUpdate() {
             let rowNumber = parseInt(document.getElementById('modal-row-index').value, 10);
             let peratusVal = document.getElementById('m-peratus').value.trim();
+            let statusVal = document.getElementById('m-status').value;
+            let actFinishVal = document.getElementById('m-act-finish').value;
+
+            if (statusVal === 'Siap' && !actFinishVal) {
+                showToast("Sila isi Actual Finish sekiranya status adalah Siap sebelum save dan lock.", true);
+                return;
+            }
+
             if (peratusVal !== "") { let num = parseFloat(peratusVal); if (isNaN(num) || num < 0 || num > 100) { showToast("Sila masukkan Peratus 0 - 100.", true); return; } }
             
             let formData = {
-                peratus: peratusVal, status: document.getElementById('m-status').value.trim(),
+                peratus: peratusVal, 
+                status: statusVal,
                 actualStart: document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : "",
-                actualFinish: document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : ""
+                actualFinish: actFinishVal ? formatToDMYHM(actFinishVal) : ""
             };
+            
             const btn = document.getElementById('btn-save'); let originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> MENYIMPAN...`;
             
             try {
                 const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "updatePhysicalWork", rowNumber: rowNumber, formData: formData }) });
                 const res = await response.json();
-                if (res && res.success) { showToast("Maklumat dikemaskini."); closeModal(); manualRefresh(); } else { showToast("Ralat: " + (res ? res.error : 'Unknown'), true); }
-            } catch (err) { showToast("Ralat kemaskini: " + err, true); }
+                if (res && res.success) { 
+                    showToast("Selesai Kemaskini"); 
+                    let nowStr = new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+                    document.getElementById('m-tarikh').value = nowStr;
+                    if (actFinishVal) {
+                        setModalLockState(true);
+                    }
+                    fetchData(false); 
+                } else { 
+                    showToast("Ralat: " + (res ? res.error : 'Unknown'), true); 
+                }
+            } catch (err) { 
+                showToast("Ralat kemaskini: " + err, true); 
+            }
             btn.disabled = false; btn.innerHTML = originalText;
         }
 
@@ -347,12 +387,31 @@
             document.getElementById('m-butiran').value = row[1] || ''; document.getElementById('m-durasi').value = row[7] || '';
             let rawPct = row[9]; let valPct = '';
             if (rawPct !== null && rawPct !== '') { let num = parseFloat(String(rawPct).replace('%', '').trim()); if (!isNaN(num)) valPct = (num > 0 && num <= 1) ? Math.round(num * 100) : Math.round(num); }
-            document.getElementById('m-peratus').value = valPct; document.getElementById('m-status').value = row[8] || '';
+            document.getElementById('m-peratus').value = valPct; 
+            
+            let statusSelect = document.getElementById('m-status');
+            let rowStatus = row[8] ? String(row[8]).trim() : "Sedang Dijalankan";
+            statusSelect.value = (rowStatus.toUpperCase().includes('SIAP')) ? "Siap" : "Sedang Dijalankan";
+
             document.getElementById('m-act-start').value = formatToDatetimeLocal(row[4]); document.getElementById('m-act-finish').value = formatToDatetimeLocal(row[5]);
             setModalLockState((row[5] !== "" && row[5] !== null && row[5] !== undefined)); document.getElementById('modal-update').classList.remove('hidden');
         }
 
-        function checkActualFinishInput() { if (document.getElementById('m-act-finish').value) { let p = document.getElementById('m-peratus'), s = document.getElementById('m-status'); if (!p.value || p.value < 100) p.value = 100; if (!s.value || s.value.toUpperCase() === 'SEDANG BERJALAN') s.value = 'SIAP'; } }
+        function checkActualFinishInput() { 
+            if (document.getElementById('m-act-finish').value) { 
+                let p = document.getElementById('m-peratus'), s = document.getElementById('m-status'); 
+                if (!p.value || p.value < 100) p.value = 100; 
+                s.value = 'Siap'; 
+            } 
+        }
+
+        function checkStatusChange() {
+            let s = document.getElementById('m-status').value;
+            let p = document.getElementById('m-peratus');
+            if (s === 'Siap') {
+                if (!p.value || p.value < 100) p.value = 100;
+            }
+        }
         
         function setModalLockState(isLocked) {
             ['m-peratus','m-status','m-act-start','m-act-finish'].forEach(id => { let el = document.getElementById(id); el.disabled = isLocked; if(isLocked) el.classList.add('bg-slate-100','text-slate-500'); else el.classList.remove('bg-slate-100','text-slate-500'); });
@@ -362,11 +421,14 @@
         }
 
         function closeModal() { document.getElementById('modal-update').classList.add('hidden'); }
-        function generateShareText() { return `*TARIKH* - ${document.getElementById('m-tarikh').value}\n*BUTIRAN KERJA* - ${document.getElementById('m-butiran').value}\n*BASELINE FINISH* - ${document.getElementById('m-base-finish').value}\n*PERATUS KERJA SIAP* - ${document.getElementById('m-peratus').value}%\n*ACTUAL START* - ${document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : ''}\n*ACTUAL FINISH* - ${document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : ''}\n*ACTUAL DURATION* - ${document.getElementById('m-durasi').value}`; }
+        
+        function generateShareText() { 
+            return `*TARIKH* - ${document.getElementById('m-tarikh').value}\n*BUTIRAN KERJA* - ${document.getElementById('m-butiran').value}\n*BASELINE START* - ${document.getElementById('m-base-start').value}\n*BASELINE FINISH* - ${document.getElementById('m-base-finish').value}\n*PERATUS KERJA SIAP* - ${document.getElementById('m-peratus').value}%\n*ACTUAL START* - ${document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : ''}\n*ACTUAL FINISH* - ${document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : ''}\n*ACTUAL DURATION* - ${document.getElementById('m-durasi').value}`; 
+        }
+
         function copyText() { navigator.clipboard.writeText(generateShareText()).then(() => showToast("Salinan Berjaya!")).catch(e => showToast("Ralat salin", true)); }
         function whatsappShare() { window.open(`https://wa.me/?text=${encodeURIComponent(generateShareText())}`, '_blank'); }
 
-        // OPTIMISASI: Soft Refresh Chart.js (Mengelakkan Kelipan/Flicker dengan menggunakan update() berbanding destroy())
         function renderFisikCharts(onTime, lewat, inProgress, labels, baselineData, actualData) {
             if (chartFisikStatusInst) {
                 chartFisikStatusInst.data.datasets[0].data = [onTime, lewat, inProgress];
@@ -434,7 +496,6 @@
             renderSecondaryCharts(secondaryMap); renderMap(filteredRows);
         }
 
-        // OPTIMISASI: Soft Refresh untuk graf LRA
         function renderSecondaryCharts(secondaryMap) {
             const labels = Object.keys(secondaryMap);
             
