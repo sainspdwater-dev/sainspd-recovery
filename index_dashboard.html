@@ -324,13 +324,11 @@
             if (!str) return null;
             let cleanStr = String(str).trim();
             
-            // Jika format ISO (YYYY-MM-DD HH:mm:ss)
             if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(cleanStr)) {
                 let d = new Date(cleanStr.replace(/-/g, '/'));
                 if (!isNaN(d.getTime())) return d;
             }
 
-            // Jika format M/D/YYYY atau D/M/YYYY
             let parts = cleanStr.split(/[\s/\-:]+/);
             if (parts.length >= 3) {
                 let p1 = parseInt(parts[0], 10);
@@ -338,15 +336,24 @@
                 let p3 = parseInt(parts[2], 10);
                 
                 let day, month, year;
-                if (p3 > 31) { // Format M/D/YYYY (cth: 1/23/2026)
-                    month = p1 - 1;
-                    day = p2 + 1;
-                    year = p3;
-                } else if (p1 > 31) { // Format YYYY/MM/DD
+                if (p3 > 31) { 
+                    // Format M/D/YYYY atau DD/MM/YYYY yang mempunyai 4 digit tahun di hujung
+                    // Semak jika bahagian pertama > 12, ia pastinya Hari (DD/MM/YYYY)
+                    if (p1 > 12) {
+                        day = p1;
+                        month = p2;
+                        year = p3;
+                    } else {
+                        // Andaian standard Malaysia (DD/MM/YYYY)
+                        day = p1;
+                        month = p2;
+                        year = p3;
+                    }
+                } else if (p1 > 31) { 
                     year = p1;
                     month = p2;
                     day = p3;
-                } else { // Format D/M/YYYY
+                } else { 
                     day = p1;
                     month = p2;
                     year = p3;
@@ -386,7 +393,6 @@
             let totalDuration = finish.getTime() - start.getTime();
             if (totalDuration <= 0) return "100%";
             
-            // Jika kerja telah Siap (actualFinish ada), stamp pengiraan pada actualFinish tersebut
             let actFinish = parseCustomDate(actualFinishStr);
             let targetTime = (actFinish && !isNaN(actFinish.getTime())) ? actFinish.getTime() : new Date().getTime();
             
