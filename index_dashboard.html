@@ -85,7 +85,18 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-center border-collapse text-sm">
                         <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
-                            <tr><th class="p-3 border-b">TARIKH</th><th class="p-3 border-b">BASELINE FINISH</th><th class="p-3 border-b">BUTIRAN KERJA</th><th class="p-3 border-b">ACTUAL PROGRESS (%)</th><th class="p-3 border-b">ACTUAL START</th><th class="p-3 border-b">ACTUAL FINISH</th><th class="p-3 border-b">ACTUAL DURATION</th><th class="p-3 border-b">STATUS</th><th class="p-3 border-b">UPDATE</th></tr>
+                            <tr>
+                                <th class="p-3 border-b">TARIKH</th>
+                                <th class="p-3 border-b">BASELINE FINISH</th>
+                                <th class="p-3 border-b">BASELINE PROGRESS (%)</th>
+                                <th class="p-3 border-b">BUTIRAN KERJA</th>
+                                <th class="p-3 border-b">ACTUAL PROGRESS (%)</th>
+                                <th class="p-3 border-b">ACTUAL START</th>
+                                <th class="p-3 border-b">ACTUAL FINISH</th>
+                                <th class="p-3 border-b">ACTUAL DURATION</th>
+                                <th class="p-3 border-b">STATUS</th>
+                                <th class="p-3 border-b">UPDATE</th>
+                            </tr>
                         </thead>
                         <tbody id="fisik-table-body"></tbody>
                     </table>
@@ -281,8 +292,6 @@
                 const res = await response.json();
                 if (res && res.success) { 
                     showToast("Selesai Kemaskini"); 
-                    let nowStr = new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
-                    // Tukar format kepada dd/mm/yyyy hh:mm AM/PM
                     let dNow = new Date();
                     let hr = dNow.getHours(); let ampm = hr >= 12 ? 'PM' : 'AM'; hr = hr % 12; hr = hr ? hr : 12;
                     let formattedNow = `${String(dNow.getDate()).padStart(2, '0')}/${String(dNow.getMonth() + 1).padStart(2, '0')}/${dNow.getFullYear()} ${String(hr).padStart(2, '0')}:${String(dNow.getMinutes()).padStart(2, '0')} ${ampm}`;
@@ -310,16 +319,29 @@
             else { fisikSec.classList.add('hidden'); lraSec.classList.remove('hidden'); renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
         }
 
+        // Penambahbaikan parseCustomDate untuk menangani format DD/MM/YYYY dengan tepat
         function parseCustomDate(str) {
-            if (!str) return null; let d = new Date(str); if (!isNaN(d.getTime())) return d;
-            let cleanStr = String(str).trim(); let parts = cleanStr.split(/[-/ :]/);
+            if (!str) return null;
+            let cleanStr = String(str).trim();
+            let parts = cleanStr.split(/[\s/\-:]+/);
             if (parts.length >= 3) {
-                let day = parseInt(parts[0], 10); let month = parseInt(parts[1], 10) - 1; let year = parseInt(parts[2], 10);
-                let hour = parts[3] ? parseInt(parts[3], 10) : 0; let min = parts[4] ? parseInt(parts[4], 10) : 0;
-                if (cleanStr.toUpperCase().includes('PM') && hour < 12) hour += 12;
-                if (cleanStr.toUpperCase().includes('AM') && hour === 12) hour = 0;
-                let parsed = new Date(year, month, day, hour, min, 0); if (!isNaN(parsed.getTime())) return parsed;
-            } return null;
+                let day = parseInt(parts[0], 10);
+                let month = parseInt(parts[1], 10) - 1;
+                let year = parseInt(parts[2], 10);
+                let hour = parts[3] ? parseInt(parts[3], 10) : 0;
+                let min = parts[4] ? parseInt(parts[4], 10) : 0;
+                let sec = parts[5] ? parseInt(parts[5], 10) : 0;
+                
+                let ampm = parts.length > 5 ? parts[parts.length - 1].toUpperCase() : '';
+                if (ampm === 'PM' && hour < 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
+                
+                let parsed = new Date(year, month, day, hour, min, sec);
+                if (!isNaN(parsed.getTime())) return parsed;
+            }
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) return d;
+            return null;
         }
 
         function formatToDMYHM(str) {
@@ -330,7 +352,7 @@
         function formatToDatetimeLocal(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return ''; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
         function formatDurationText(diffMs) { if (diffMs < 0) diffMs = 0; let totalMins = Math.floor(diffMs / (1000 * 60)); return `${Math.floor(totalMins / (60 * 24))} hari ${Math.floor((totalMins % (60 * 24)) / 60)} jam`; }
 
-        function calculateBaselineProgress(baseStartStr, baseFinishStr) {
+        function calculateBaselineProgress(baseStartStr, baseFinishStr, actualFinishStr) {
             let start = parseCustomDate(baseStartStr);
             let finish = parseCustomDate(baseFinishStr);
             if (!start || !finish || isNaN(start.getTime()) || isNaN(finish.getTime())) return "0%";
@@ -338,8 +360,11 @@
             let totalDuration = finish.getTime() - start.getTime();
             if (totalDuration <= 0) return "100%";
             
-            let now = new Date().getTime();
-            let elapsed = now - start.getTime();
+            // Jika kerja telah Siap (actualFinish ada), stamp pengiraan pada actualFinish tersebut
+            let actFinish = parseCustomDate(actualFinishStr);
+            let targetTime = (actFinish && !isNaN(actFinish.getTime())) ? actFinish.getTime() : new Date().getTime();
+            
+            let elapsed = targetTime - start.getTime();
             let pct = (elapsed / totalDuration) * 100;
             
             if (pct < 0) return "0%";
@@ -366,6 +391,8 @@
                 }
 
                 let baselineFinishDate = parseCustomDate(row[3]); let actualStartDate = parseCustomDate(row[4]); let actualFinishDate = parseCustomDate(row[5]);
+                let baselineProgressText = calculateBaselineProgress(row[2], row[3], row[5]);
+
                 let isRunning = (!actualFinishDate || isNaN(actualFinishDate.getTime()));
                 if (isRunning && baselineFinishDate && !isNaN(baselineFinishDate.getTime()) && now > baselineFinishDate.getTime()) berjalanLewat++;
                 if(status.includes('LEWAT')) lewat++; else if(status.includes('SIAP') || status.includes('JADUAL')) onTime++; else inProgress++;
@@ -390,10 +417,15 @@
                 let sb = status.includes('LEWAT') ? 'bg-rose-100 text-rose-700' : (status.includes('SIAP') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700');
                 let pctDisplay = (percentCount > 0 && rawPeratus !== null && rawPeratus !== '') ? `${Math.round(pctValue)}%` : '-';
                 tbodyHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[0])}</td><td class="p-3 text-center text-slate-600">${formatToDMYHM(row[3])}</td>
-                    <td class="p-3 text-center font-semibold text-slate-800">${row[1]}</td><td class="p-3 text-center font-bold text-blue-600">${pctDisplay}</td>
-                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[4])}</td><td class="p-3 text-center text-slate-600">${row[5] ? formatToDMYHM(row[5]) : '<span class="text-amber-500 italic">Masih Berjalan</span>'}</td>
-                    <td class="p-3 text-center font-bold">${durationDisplay}</td><td class="p-3 text-center"><span class="${sb} px-2 py-1 rounded text-[10px] font-bold uppercase">${row[8]||'SEDANG BERJALAN'}</span></td>
+                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[0])}</td>
+                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[3])}</td>
+                    <td class="p-3 text-center font-bold text-slate-700">${baselineProgressText}</td>
+                    <td class="p-3 text-center font-semibold text-slate-800">${row[1]}</td>
+                    <td class="p-3 text-center font-bold text-blue-600">${pctDisplay}</td>
+                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[4])}</td>
+                    <td class="p-3 text-center text-slate-600">${row[5] ? formatToDMYHM(row[5]) : '<span class="text-amber-500 italic">Masih Berjalan</span>'}</td>
+                    <td class="p-3 text-center font-bold">${durationDisplay}</td>
+                    <td class="p-3 text-center"><span class="${sb} px-2 py-1 rounded text-[10px] font-bold uppercase">${row[8]||'SEDANG BERJALAN'}</span></td>
                     <td class="p-3 text-center"><button onclick="openUpdateModal(${i + 1})" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow">UPDATE</button></td></tr>`;
             }
             document.getElementById('kpi-tugas').innerText = totalTugas; document.getElementById('kpi-ontime').innerText = onTime; document.getElementById('kpi-lewat').innerText = lewat;
@@ -452,12 +484,13 @@
         function generateShareText() { 
             let baseStart = document.getElementById('m-base-start').value;
             let baseFinish = document.getElementById('m-base-finish').value;
-            let baseProg = calculateBaselineProgress(baseStart, baseFinish);
+            let actFinishInput = document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : '';
+            
+            let baseProg = calculateBaselineProgress(baseStart, baseFinish, actFinishInput);
             let actProg = document.getElementById('m-peratus').value ? document.getElementById('m-peratus').value + "%" : "0%";
             let actStart = document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : '';
-            let actFinish = document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : '';
 
-            return `*TARIKH* - ${document.getElementById('m-tarikh').value}\n*BUTIRAN KERJA* - ${document.getElementById('m-butiran').value}\n*BASELINE START* - ${baseStart}\n*BASELINE FINISH* - ${baseFinish}\n*BASELINE PROGRESS (%)* - ${baseProg}\n*ACTUAL PROGRESS (%)* - ${actProg}\n*ACTUAL START* - ${actStart}\n*ACTUAL FINISH* - ${actFinish}\n*ACTUAL DURATION* - ${document.getElementById('m-durasi').value}`; 
+            return `*TARIKH* - ${document.getElementById('m-tarikh').value}\n*BUTIRAN KERJA* - ${document.getElementById('m-butiran').value}\n*BASELINE START* - ${baseStart}\n*BASELINE FINISH* - ${baseFinish}\n*BASELINE PROGRESS (%)* - ${baseProg}\n*ACTUAL PROGRESS (%)* - ${actProg}\n*ACTUAL START* - ${actStart}\n*ACTUAL FINISH* - ${actFinishInput}\n*ACTUAL DURATION* - ${document.getElementById('m-durasi').value}`; 
         }
 
         function copyText() { navigator.clipboard.writeText(generateShareText()).then(() => showToast("Salinan Berjaya!")).catch(e => showToast("Ralat salin", true)); }
