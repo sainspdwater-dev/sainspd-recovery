@@ -319,15 +319,40 @@
             else { fisikSec.classList.add('hidden'); lraSec.classList.remove('hidden'); renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
         }
 
-        // Penambahbaikan parseCustomDate untuk menangani format DD/MM/YYYY dengan tepat
+        // Pembetulan Khas pengesanan tarikh (Sokong YYYY-MM-DD, M/D/YYYY & DD/MM/YYYY)
         function parseCustomDate(str) {
             if (!str) return null;
             let cleanStr = String(str).trim();
+            
+            // Jika format ISO (YYYY-MM-DD HH:mm:ss)
+            if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(cleanStr)) {
+                let d = new Date(cleanStr.replace(/-/g, '/'));
+                if (!isNaN(d.getTime())) return d;
+            }
+
+            // Jika format M/D/YYYY atau D/M/YYYY
             let parts = cleanStr.split(/[\s/\-:]+/);
             if (parts.length >= 3) {
-                let day = parseInt(parts[0], 10);
-                let month = parseInt(parts[1], 10) - 1;
-                let year = parseInt(parts[2], 10);
+                let p1 = parseInt(parts[0], 10);
+                let p2 = parseInt(parts[1], 10) - 1;
+                let p3 = parseInt(parts[2], 10);
+                
+                let day, month, year;
+                if (p3 > 31) { // Format M/D/YYYY (cth: 1/23/2026)
+                    month = p1 - 1;
+                    day = p2 + 1;
+                    year = p3;
+                } else if (p1 > 31) { // Format YYYY/MM/DD
+                    year = p1;
+                    month = p2;
+                    day = p3;
+                } else { // Format D/M/YYYY
+                    day = p1;
+                    month = p2;
+                    year = p3;
+                    if (year < 100) year += 2000;
+                }
+                
                 let hour = parts[3] ? parseInt(parts[3], 10) : 0;
                 let min = parts[4] ? parseInt(parts[4], 10) : 0;
                 let sec = parts[5] ? parseInt(parts[5], 10) : 0;
@@ -339,8 +364,9 @@
                 let parsed = new Date(year, month, day, hour, min, sec);
                 if (!isNaN(parsed.getTime())) return parsed;
             }
-            let d = new Date(str);
-            if (!isNaN(d.getTime())) return d;
+
+            let dFallback = new Date(cleanStr);
+            if (!isNaN(dFallback.getTime())) return dFallback;
             return null;
         }
 
