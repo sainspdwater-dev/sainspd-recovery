@@ -187,6 +187,7 @@
         let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
+        let currentRowFizikal = null;
         
         let currentDataVersion = "0";
 
@@ -319,7 +320,7 @@
             else { fisikSec.classList.add('hidden'); lraSec.classList.remove('hidden'); renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
         }
 
-        // Pembetulan Khas pengesanan tarikh (Sokong YYYY-MM-DD, M/D/YYYY & DD/MM/YYYY)
+        // Pembetulan Khas pengesanan tarikh (Menyokong AM/PM, ISO, D/M/YYYY & DD/MM/YYYY dengan tepat)
         function parseCustomDate(str) {
             if (!str) return null;
             let cleanStr = String(str).trim();
@@ -337,18 +338,9 @@
                 
                 let day, month, year;
                 if (p3 > 31) { 
-                    // Format M/D/YYYY atau DD/MM/YYYY yang mempunyai 4 digit tahun di hujung
-                    // Semak jika bahagian pertama > 12, ia pastinya Hari (DD/MM/YYYY)
-                    if (p1 > 12) {
-                        day = p1;
-                        month = p2;
-                        year = p3;
-                    } else {
-                        // Andaian standard Malaysia (DD/MM/YYYY)
-                        day = p1;
-                        month = p2;
-                        year = p3;
-                    }
+                    day = p1;
+                    month = p2;
+                    year = p3;
                 } else if (p1 > 31) { 
                     year = p1;
                     month = p2;
@@ -362,9 +354,21 @@
                 
                 let hour = parts[3] ? parseInt(parts[3], 10) : 0;
                 let min = parts[4] ? parseInt(parts[4], 10) : 0;
-                let sec = parts[5] ? parseInt(parts[5], 10) : 0;
-                
-                let ampm = parts.length > 5 ? parts[parts.length - 1].toUpperCase() : '';
+                let sec = 0;
+                let ampm = '';
+
+                if (parts.length > 5) {
+                    let lastPart = parts[parts.length - 1].toUpperCase();
+                    if (lastPart === 'AM' || lastPart === 'PM') {
+                        ampm = lastPart;
+                    } else {
+                        sec = parseInt(parts[5], 10) || 0;
+                        if (parts.length > 6) {
+                            ampm = parts[parts.length - 1].toUpperCase();
+                        }
+                    }
+                }
+
                 if (ampm === 'PM' && hour < 12) hour += 12;
                 if (ampm === 'AM' && hour === 12) hour = 0;
                 
@@ -468,6 +472,7 @@
 
         function openUpdateModal(rowNumber) {
             let row = globalDataFizikal[rowNumber - 1]; if (!row) return;
+            currentRowFizikal = row;
             document.getElementById('modal-row-index').value = rowNumber; 
             document.getElementById('m-tarikh').value = formatToDMYHM(row[0]);
             document.getElementById('m-base-start').value = formatToDMYHM(row[2]); 
@@ -518,7 +523,9 @@
             let baseFinish = document.getElementById('m-base-finish').value;
             let actFinishInput = document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : '';
             
-            let baseProg = calculateBaselineProgress(baseStart, baseFinish, actFinishInput);
+            let actFinishRaw = document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : (currentRowFizikal ? currentRowFizikal[5] : '');
+            let baseProg = currentRowFizikal ? calculateBaselineProgress(currentRowFizikal[2], currentRowFizikal[3], actFinishRaw) : calculateBaselineProgress(baseStart, baseFinish, actFinishInput);
+
             let actProg = document.getElementById('m-peratus').value ? document.getElementById('m-peratus').value + "%" : "0%";
             let actStart = document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : '';
 
