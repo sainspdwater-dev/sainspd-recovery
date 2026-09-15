@@ -631,6 +631,30 @@
             fetch(KML_BASE_URL + encodeURIComponent(names.shift())).then(res => { if(!res.ok) throw new Error(); return res.text(); }).then(callback).catch(() => fetchKmlWithFallback(names, callback));
         }
 
+        function playTingSound() {
+            try {
+                // Jana bunyi loceng "Ting" digital secara terus (Bypasses external MP3 block)
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // Nada tinggi (Ting)
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.5);
+                
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            } catch (e) {
+                console.log("Audio dihalang oleh pelayar: ", e);
+            }
+        }
+
         function renderMap(rows) {
             if (!map) { map = L.map('map').setView([2.52, 101.95], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); }
             geoLayers.forEach(l => map.removeLayer(l)); geoLayers = [];
