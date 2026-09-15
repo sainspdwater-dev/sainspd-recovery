@@ -23,6 +23,7 @@
         <p id="loading-text" class="text-lg font-semibold tracking-wide">Loading...</p>
     </div>
 
+    <!-- NOTIFIKASI TOAST DI HUJUNG KANAN BAWAH -->
     <div id="custom-toast" class="fixed bottom-5 right-5 z-50 hidden transform translate-y-2 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-sm flex items-center space-x-3">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
         <span id="toast-msg">Selesai Kemaskini</span>
@@ -35,10 +36,13 @@
                 <p class="text-xs text-slate-400 mt-0.5">Port Dickson</p>
             </div>
             <div class="flex items-center space-x-4 mt-3 md:mt-0">
-                <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs font-medium">
-                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-emerald-400">LIVE</span>
+                
+                <!-- BADGE LIVE DINAMIK MENGIKUT E1 -->
+                <div id="live-badge-container" class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs font-medium">
+                    <span class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>
+                    <span class="text-slate-400">MENYEMAK...</span>
                 </div>
+
                 <span id="last-updated" class="text-xs text-slate-300">Last Updated: --</span>
                 <button onclick="manualRefresh()" id="refresh-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
                     <i class="fa-solid fa-rotate"></i><span>REFRESH</span>
@@ -188,24 +192,91 @@
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
         let currentRowFizikal = null;
-        
         let currentDataVersion = "0";
+        let isLiveMode = false; // Status Live dikawal oleh E1 (YA / TIDAK)
+        let audioCtx = null; // Global audio context untuk bunyi ting
 
         document.addEventListener("DOMContentLoaded", () => {
             if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.replace('index.html'); return; }
+            
+            // MOHON KEBENARAN NOTIFIKASI SISTEM SEKALI SAHAJA
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+
             fetchData(true);
             
             refreshInterval = setInterval(checkVersionAndFetch, 15000); 
             timerInterval = setInterval(() => { if (activeTabName === 'fisik') renderPhysicalWork(); }, 60000); 
         });
 
-        window.addEventListener('pageshow', function(event) {
-            if (event.persisted || !sessionStorage.getItem('pd_water_auth_token')) {
-                window.location.replace('index.html');
+        // BUKA KUNCI AUDIO PADA KLIK PERTAMA PENGGUNA DI MANA-MANA RUANG WEB
+        document.addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-        });
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }, { once: true });
 
+        // KEMASKINI BADGE UI LIVE DI HEADER
+        function updateLiveBadge(isLive) {
+            const badge = document.getElementById('live-badge-container');
+            if (!badge) return;
+            if (isLive) {
+                badge.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400">LIVE: ON</span>`;
+            } else {
+                badge.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-slate-500"></span><span class="text-slate-400">LIVE: OFF</span>`;
+            }
+        }
+
+        // FUNGSI BUNYI TING DIGITAL (WEB AUDIO API YANG DITAMBAHBAIK)
+        // FUNGSI BUNYI ALARM / MESSAGE ALERT (DUA TON PANTAS / BEEP-BEEP)
+        function playTingSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const now = audioCtx.currentTime;
+                
+                // Beep Pertama
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'square'; // Menghasilkan bunyi amaran digital yang jelas
+                osc1.frequency.setValueAtTime(880, now); 
+                gain1.gain.setValueAtTime(0.1, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.12);
+
+                // Beep Kedua (Nada lebih tinggi sedikit untuk kesan "Message Alert")
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'square';
+                osc2.frequency.setValueAtTime(1320, now + 0.15); 
+                gain2.gain.setValueAtTime(0.1, now + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.27);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now + 0.15);
+                osc2.stop(now + 0.27);
+
+            } catch (e) {
+                console.log("Audio dihalang pelayar:", e);
+            }
+        }
+
+        // FUNGSI SEMAKAN UTAMA
         async function checkVersionAndFetch() {
+            if (!isLiveMode) return; // Jika E1 = TIDAK, abaikan auto-check
+
             try {
                 const response = await fetch(API_URL, { 
                     method: 'POST', 
@@ -216,6 +287,27 @@
                 if (res && res.success && res.version) {
                     if (currentDataVersion !== "0" && currentDataVersion !== res.version) {
                         currentDataVersion = res.version;
+                        
+                        // 1. AMARAN SUARA BERSUARA (TEXT-TO-SPEECH)
+                        if ('speechSynthesis' in window) {
+                            const speech = new SpeechSynthesisUtterance("Perhatian");
+                            speech.lang = 'ms-MY'; // Bahasa Melayu
+                            speech.rate = 1.0;     // Kelajuan suara
+                            window.speechSynthesis.speak(speech);
+                        }
+
+                        // 2. PAPARKAN NOTIFIKASI SISTEM (POP-UP WINDOWS)
+                        if (Notification.permission === "granted") {
+                            new Notification("Sistem Pemulihan Air PD", {
+                                body: "Data baharu dikesan & dikemaskini!",
+                                icon: "https://cdn-icons-png.flaticon.com/512/3106/3106777.png"
+                            });
+                        }
+
+                        // 3. TUKAR TAJUK TAB & PAPAR TOAST DALAM WEB
+                        document.title = "🔔 (ADA UPDATE) - STATUS PEMULIHAN BEKALAN AIR";
+                        showToast("Data baharu dikesan & dikemaskini!");
+                        
                         fetchData(false); 
                     } else if (currentDataVersion === "0") {
                         currentDataVersion = res.version;
@@ -223,6 +315,11 @@
                 }
             } catch (err) {}
         }
+
+        // Kembalikan tajuk asal apabila pengguna klik semula pada tab web
+        window.addEventListener('focus', () => {
+            document.title = "STATUS PEMULIHAN BEKALAN AIR";
+        });
 
         function logout() { 
             sessionStorage.removeItem('pd_water_auth_token'); 
@@ -242,16 +339,29 @@
         async function fetchData(isInitial) {
             if (isInitial) showLoading(true);
             try {
-                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "getDashboardData" }) });
+                // Gunakan forceRefresh jika bukan muat turun awal (initial) untuk bypass cache
+                const payload = isInitial ? { action: "getDashboardData" } : { action: "getDashboardData", forceRefresh: true };
+                
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 const res = await response.json();
+                
                 if (res && res.success) {
                     globalData = res.data || []; globalDataFizikal = res.dataFizikal || [];
                     document.getElementById('last-updated').innerText = "Last Updated: " + (res.lastUpdated || '--');
-                    if (isInitial && res.b1Value) {
+                    
+                    // BACA E1 DARI GOOGLE SHEET (YA / TIDAK)
+                    if (res.e1Value !== undefined) {
+                        isLiveMode = (String(res.e1Value).trim().toUpperCase() === 'YA');
+                        updateLiveBadge(isLiveMode);
+                    }
+
+                    // BACA B1 DARI GOOGLE SHEET UNTUK DEFAULT TAB
+                    if ((isInitial || isLiveMode) && res.b1Value) {
                         const val = res.b1Value.toUpperCase();
                         if (val.includes("LINGGI")) activeTabName = 'linggi'; else if (val.includes("SAWAH")) activeTabName = 'sawah'; else if (val.includes("SEREMBAN") || val.includes("NGOI")) activeTabName = 'seremban';
                     }
                     switchTab(activeTabName, true);
+                    if (activeTabName === 'fisik' && !isInitial) renderPhysicalWork();
                 }
             } catch (err) { console.error(err); } finally { if (isInitial) showLoading(false); }
         }
@@ -260,6 +370,9 @@
             const btn = document.getElementById('refresh-btn'); btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i><span>MENGEKEMASKINI...</span>`;
             await fetchData(false);
             btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>REFRESH</span>`;
+            
+            // NOTIFIKASI TOAST SELEPAS REFRESH MANUAL
+            showToast("Data Selesai Dikemaskini!");
         }
 
         function onSecondaryFilterChange() {
@@ -320,7 +433,7 @@
             else { fisikSec.classList.add('hidden'); lraSec.classList.remove('hidden'); renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
         }
 
-        // Pembetulan Khas pengesanan tarikh (Menyokong AM/PM, ISO, D/M/YYYY & DD/MM/YYYY dengan tepat)
+        // Pembetulan Khas pengesanan tarikh
         function parseCustomDate(str) {
             if (!str) return null;
             let cleanStr = String(str).trim();
@@ -338,17 +451,11 @@
                 
                 let day, month, year;
                 if (p3 > 31) { 
-                    day = p1;
-                    month = p2;
-                    year = p3;
+                    day = p1; month = p2; year = p3;
                 } else if (p1 > 31) { 
-                    year = p1;
-                    month = p2;
-                    day = p3;
+                    year = p1; month = p2; day = p3;
                 } else { 
-                    day = p1;
-                    month = p2;
-                    year = p3;
+                    day = p1; month = p2; year = p3;
                     if (year < 100) year += 2000;
                 }
                 
