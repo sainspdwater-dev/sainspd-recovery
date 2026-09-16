@@ -252,7 +252,6 @@
             }
         }
 
-        // FUNGSI DOWNLOAD PNG & PDF (DIJAMIN 100% TEPAT & TIDAK LARI KERANA GUNA HTML5 CANVAS RENDERER)
         async function downloadView(format) {
             window.scrollTo(0, 0); 
             const el = document.body; 
@@ -278,7 +277,6 @@
                     link.href = imgData;
                     link.click();
                 } else if (format === 'pdf') {
-                    // JPEG KUALITI 0.75 UNTUK SAIZ ~800KB - 1MB (TEKS TAJAM & JELAS)
                     const imgData = canvas.toDataURL('image/jpeg', 0.75);
                     const { jsPDF } = window.jspdf;
                     
@@ -402,7 +400,18 @@
             const btn = document.getElementById('btn-save'); let originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> MENYIMPAN...`;
             
             try {
-                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "updatePhysicalWork", rowNumber: rowNumber, formData: formData }) });
+                // Ambil token keselamatan daripada sessionStorage
+                const authToken = sessionStorage.getItem('pd_water_auth_token') || '';
+
+                const response = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'text/plain;charset=utf-8',
+                        'Authorization': `Bearer ${authToken}` // <-- Integrasi Auth Header
+                    }, 
+                    body: JSON.stringify({ action: "updatePhysicalWork", rowNumber: rowNumber, formData: formData }) 
+                });
+                
                 const res = await response.json();
                 if (res && res.success) { 
                     showToast("Selesai Kemaskini"); 
@@ -413,7 +422,15 @@
                     document.getElementById('m-tarikh').value = formattedNow;
                     if (actFinishVal) setModalLockState(true);
                     fetchData(false); 
-                } else { showToast("Ralat: " + (res ? res.error : 'Unknown'), true); }
+                } else { 
+                    // Jika token tamat tempoh atau tidak sah (401), arahkan pengguna log masuk semula
+                    if (response.status === 401) {
+                        showToast("Sesi tamat tempoh. Sila log masuk semula.", true);
+                        setTimeout(() => logout(), 2000);
+                        return;
+                    }
+                    showToast("Ralat: " + (res ? res.error : 'Unknown'), true); 
+                }
             } catch (err) { showToast("Ralat kemaskini: " + err, true); }
             btn.disabled = false; btn.innerHTML = originalText;
         }
@@ -653,7 +670,6 @@
 
         async function renderMap(rows) {
             if (!map) { 
-                // TETAPAN UTAMA: Menggunakan L.canvas() untuk mengelakkan polygon lari ketika html2canvas
                 map = L.map('map', {
                     renderer: L.canvas()
                 }).setView([2.52, 101.95], 13); 
