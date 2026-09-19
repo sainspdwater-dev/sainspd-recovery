@@ -397,7 +397,7 @@
                 const res = await (await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "checkVersion" }) })).json();
                 if (res && res.success && res.version && currentDataVersion !== "0" && currentDataVersion !== res.version) {
                     currentDataVersion = res.version;
-                    if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance("Please Checked."));
+                    if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance("New Update."));
                     if (Notification.permission === "granted") new Notification("Sistem Air", {body: "Data dikemaskini!"});
                     fetchData(false); 
                 } else if (currentDataVersion === "0") { currentDataVersion = res.version; }
