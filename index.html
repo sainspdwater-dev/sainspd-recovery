@@ -89,7 +89,10 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Menyimpan token sesi
                     sessionStorage.setItem('pd_water_auth_token', data.token);
+                    // Menyimpan tahap capaian pengguna (Admin / Guest)
+                    sessionStorage.setItem('pd_water_user_level', data.level || 'guest');
                     window.location.href = 'index_dashboard.html';
                 } else {
                     errorText.innerText = data.error || "Username atau password tidak sah.";
