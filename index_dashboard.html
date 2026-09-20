@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STATUS PEMULIHAN BEKALAN AIR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        .active-tab { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
+        .stretch-btn { transition: all 0.2s ease-in-out; }
+        .stretch-btn:hover { transform: scale(1.03); }
+        #map { height: 500px; width: 100%; border-radius: 0.5rem; z-index: 1; }
+        .modal { z-index: 1000; }
+        .map-label { background-color: rgba(255, 255, 255, 0.85); border: 1px solid #333; border-radius: 4px; font-weight: 800; font-size: 11px; text-align: center; color: #111; padding: 2px 5px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .admin-checkbox { width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: #10b981; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased" id="dashboard-body">
+
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900 bg-opacity-75 z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid mb-4"></div>
+        <p id="loading-text" class="text-lg font-semibold tracking-wide">Loading...</p>
+    </div>
+
+    <div id="custom-toast" data-html2canvas-ignore="true" class="fixed bottom-5 right-5 z-50 hidden transform translate-y-2 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-sm flex items-center space-x-3">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-msg">Selesai Kemaskini</span>
+    </div>
+
+    <!-- PENGALAT SYNC -->
+    <div id="sync-indicator" data-html2canvas-ignore="true" class="fixed top-20 right-5 z-50 hidden bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow-lg text-xs font-bold flex items-center space-x-2">
+        <i class="fa-solid fa-cloud-arrow-up fa-bounce"></i>
+        <span>Menyimpan...</span>
+    </div>
+
+    <header class="bg-slate-900 text-white shadow-md" data-html2canvas-ignore="true">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center">
+            <div class="mb-3 lg:mb-0 text-center lg:text-left">
+                <h1 class="text-2xl font-bold tracking-tight">STATUS PEMULIHAN BEKALAN AIR</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Port Dickson</p>
+            </div>
+            
+            <div class="flex flex-wrap justify-center items-center gap-3">
+                <div id="live-badge-container" class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700">
+                    <span class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>
+                    <span class="text-slate-400">MENYEMAK...</span>
+                </div>
+                
+                <span id="last-updated" class="text-xs text-slate-300 mr-2">Last Updated: --</span>
+                
+                <button onclick="downloadView('png')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
+                    <i class="fa-solid fa-image"></i><span class="hidden sm:inline">PNG</span>
+                </button>
+                <button onclick="downloadView('pdf')" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
+                    <i class="fa-solid fa-file-pdf"></i><span class="hidden sm:inline">PDF</span>
+                </button>
+                <button onclick="manualRefresh()" id="refresh-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
+                    <i class="fa-solid fa-rotate"></i><span class="hidden sm:inline">REFRESH</span>
+                </button>
+                <button onclick="logout()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 stretch-btn shadow">
+                    <i class="fa-solid fa-right-from-bracket"></i><span class="hidden sm:inline">KELUAR</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40" data-html2canvas-ignore="true">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex space-x-2 overflow-x-auto" id="main-nav-container">
+            <button onclick="switchTab('fisik')" id="nav-fisik" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap active-tab">[ STATUS KERJA FIZIKAL ]</button>
+            <button onclick="switchTab('linggi')" id="nav-linggi" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ LOJI LINGGI SUPPLY ]</button>
+            <button onclick="switchTab('sawah')" id="nav-sawah" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ LOJI SAWAH RAJA ]</button>
+            <button onclick="switchTab('seremban')" id="nav-seremban" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ SEREMBAN BARAT ]</button>
+            
+            <!-- TAB KHAS ADMIN -->
+            <button onclick="switchTab('admin-recovery')" id="nav-admin-recovery" class="hidden px-5 py-2.5 rounded-lg text-sm font-bold text-amber-600 hover:bg-amber-50 transition whitespace-nowrap border border-amber-200 bg-amber-50/50"><i class="fa-solid fa-shield-halved mr-1"></i> [ RECOVERY STATUS ]</button>
+            
+            <button onclick="switchTab('admin-whatsapp')" id="nav-admin-whatsapp" class="hidden px-5 py-2.5 rounded-lg text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition whitespace-nowrap border border-emerald-200 bg-emerald-50/50"><i class="fa-brands fa-whatsapp mr-1"></i> [ LAPORAN WHATSAPP ]</button>
+        </div>
+    </nav>
+
+    <div id="print-header" class="hidden max-w-7xl mx-auto px-4 py-4 text-center">
+        <h1 class="text-3xl font-black text-slate-800">STATUS PEMULIHAN BEKALAN AIR (PORT DICKSON)</h1>
+        <p class="text-sm text-slate-500 mt-1 font-bold" id="print-tab-title">LAPORAN KAWASAN</p>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-6" id="dashboard-main-content">
+        
+        <!-- TAB FIZIKAL -->
+        <section id="tab-fisik" class="space-y-6 tab-content">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-blue-600"><p class="text-xs font-semibold text-slate-400 uppercase">Jumlah Tugasan</p><h3 id="kpi-tugas" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-emerald-600"><p class="text-xs font-semibold text-slate-400 uppercase">Siap (Ikut Jadual)</p><h3 id="kpi-ontime" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-rose-600"><p class="text-xs font-semibold text-slate-400 uppercase">Lewat / Tertangguh</p><h3 id="kpi-lewat" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-amber-500"><p class="text-xs font-semibold text-slate-400 uppercase">Sedang Berjalan</p><h3 id="kpi-inprogress" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-orange-500"><p class="text-xs font-semibold text-slate-400 uppercase">Berjalan & Lewat</p><h3 id="kpi-berjalan-lewat" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-indigo-600"><p class="text-xs font-semibold text-slate-400 uppercase">Purata % Semua Kerja</p><h3 id="kpi-purata" class="text-2xl font-black text-slate-800 mt-1">0.00%</h3></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-1">
+                    <h3 class="text-sm font-bold text-slate-700 mb-4">Pecahan Status Tugasan</h3><div class="relative h-64"><canvas id="chartFisikStatus"></canvas></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
+                    <h3 class="text-sm font-bold text-slate-700 mb-4">Analisis Tempoh (Jam): Baseline vs Actual</h3><div class="relative h-64"><canvas id="chartFisikDuration"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 font-bold text-slate-700">Senarai Kerja Tapak</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center border-collapse text-sm">
+                        <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                            <tr>
+                                <th class="p-3 border-b">TARIKH</th>
+                                <th class="p-3 border-b">BASELINE FINISH</th>
+                                <th class="p-3 border-b">BASELINE PROGRESS (%)</th>
+                                <th class="p-3 border-b">BUTIRAN KERJA</th>
+                                <th class="p-3 border-b">ACTUAL PROGRESS (%)</th>
+                                <th class="p-3 border-b">ACTUAL START</th>
+                                <th class="p-3 border-b">ACTUAL FINISH</th>
+                                <th class="p-3 border-b">ACTUAL DURATION</th>
+                                <th class="p-3 border-b">STATUS</th>
+                                <th class="p-3 border-b" data-html2canvas-ignore="true">UPDATE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fisik-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB LRA -->
+        <section id="tab-lra-container" class="space-y-6 tab-content hidden">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4" data-html2canvas-ignore="true">
+                <div><h3 class="text-sm font-bold text-slate-700">Penapis Mengikut Secondary Supply</h3><p class="text-xs text-slate-500">Pilih secondary supply untuk memaparkan kawasan spesifik</p></div>
+                <div><select id="secondary-filter" onchange="onSecondaryFilterChange()" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-64 focus:outline-none focus:border-blue-500"><option value="ALL">SEMUA SECONDARY SUPPLY</option></select></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-blue-600"><p class="text-xs font-semibold text-slate-400 uppercase">Bilangan Kawasan</p><h3 id="kpi-kawasan" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-sky-600"><p class="text-xs font-semibold text-slate-400 uppercase">Kawasan Recovery</p><h3 id="kpi-kawasan-recovery" class="text-lg font-black text-slate-800 mt-1">0 / 0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-teal-600"><p class="text-xs font-semibold text-slate-400 uppercase">Akaun Recovery</p><h3 id="kpi-akaun-recovery" class="text-lg font-black text-slate-800 mt-1">0 / 0</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-amber-600"><p class="text-xs font-semibold text-slate-400 uppercase">Jumlah Penggunaan</p><h3 id="kpi-penggunaan" class="text-lg font-black text-slate-800 mt-1">0 m³/day</h3></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-purple-600"><p class="text-xs font-semibold text-slate-400 uppercase">% Recovery</p><h3 id="kpi-recovery" class="text-2xl font-black text-slate-800 mt-1">0.00%</h3></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Recovery % Mengikut Secondary Supply</h3><div class="relative h-72"><canvas id="chartRecovery"></canvas></div></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Jumlah Kawasan Pemulihan Mengikut Secondary Supply</h3><div class="relative h-72"><canvas id="chartUsage"></canvas></div></div>
+            </div>
+
+            <div id="map-section" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-700"><i class="fa-solid fa-map-location-dot text-blue-600 mr-2"></i>Peta Sempadan & Status Pemulihan</h3>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 shadow-sm">
+                            <span class="font-bold text-slate-500 mr-1">Petunjuk:</span>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span><span>≤ 50%</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span><span>≤ 80%</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-lime-500 inline-block"></span><span>≤ 95%</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span><span>100%</span></div>
+                        </div>
+                        <button onclick="locateUser()" data-html2canvas-ignore="true" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition"><i class="fa-solid fa-location-crosshairs"></i><span>MY LOCATION</span></button>
+                    </div>
+                </div>
+                <div id="map"></div>
+            </div>
+        </section>
+
+        <!-- TAB ADMIN RECOVERY STATUS -->
+        <section id="tab-admin-recovery" class="space-y-6 tab-content hidden">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-6 items-center">
+                <div class="flex items-center space-x-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Paparan Utama (B1):</label>
+                    <select id="admin-b1-select" onchange="queueGlobalUpdate('b1Value', this.value)" class="text-sm font-bold border border-slate-300 rounded px-2 py-1 text-blue-700 focus:outline-none">
+                        <option value="LOJI SAWAH RAJA">LOJI SAWAH RAJA</option>
+                        <option value="LOJI LINGGI SUPPLY">LOJI LINGGI SUPPLY</option>
+                        <option value="SEREMBAN BARAT">SEREMBAN BARAT</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Live Data (E1):</label>
+                    <select id="admin-e1-select" onchange="queueGlobalUpdate('e1Value', this.value)" class="text-sm font-bold border border-slate-300 rounded px-2 py-1 text-emerald-700 focus:outline-none">
+                        <option value="YA">YA</option>
+                        <option value="TIDAK">TIDAK</option>
+                    </select>
+                </div>
+                <div class="ml-auto text-xs text-slate-400 italic"><i class="fa-solid fa-circle-info mr-1"></i> Perubahan auto-save bila anda ubah/tick.</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">LRA</label>
+                    <select id="admin-filter-lra" onchange="populateAdminFilters('lra')" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-48"><option value="ALL">SEMUA</option></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">KOLAM UTAMA</label>
+                    <select id="admin-filter-kolam" onchange="populateAdminFilters('kolam')" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-48"><option value="ALL">SEMUA</option></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">SECONDARY SUPPLY</label>
+                    <select id="admin-filter-secondary" onchange="saveFiltersAndRender()" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-56"><option value="ALL">SEMUA</option></select>
+                </div>
+                <button onclick="resetAdminFilters()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold">RESET</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-800 text-white uppercase text-xs">
+                            <tr>
+                                <th class="p-3 border-b border-slate-700">LRA</th>
+                                <th class="p-3 border-b border-slate-700">KOLAM UTAMA</th>
+                                <th class="p-3 border-b border-slate-700">SECONDARY SUPPLY</th>
+                                <th class="p-3 border-b border-slate-700">KAWASAN</th>
+                                <th class="p-3 border-b border-slate-700 text-center">
+                                    <div class="flex flex-wrap items-center justify-center gap-2">
+                                        <span>TICK (DONE)</span>
+                                        <button onclick="confirmUntickAll()" class="bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded text-[10px] font-bold shadow transition" title="Untick semua kawasan yang dipaparkan">UNTICK ALL</button>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB BARU: ADMIN LAPORAN WHATSAPP -->
+        <section id="tab-admin-whatsapp" class="space-y-6 tab-content hidden">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">LRA</label>
+                    <select id="wa-filter-lra" onchange="populateWaSecondary()" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-48">
+                        <option value="ALL">SEMUA LRA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">SECONDARY SUPPLY</label>
+                    <select id="wa-filter-secondary" class="text-xs border border-slate-300 rounded-lg px-3 py-2 w-56">
+                        <option value="ALL">SEMUA SECONDARY SUPPLY</option>
+                    </select>
+                </div>
+                <button onclick="janaLaporanWA()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice"></i> JANA LAPORAN
+                </button>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Teks Laporan (Boleh diedit)</label>
+                <textarea id="wa-report-text" rows="10" class="w-full p-4 border border-slate-300 rounded-lg focus:outline-none focus:border-emerald-500 text-sm font-mono leading-relaxed bg-slate-50 shadow-inner"></textarea>
+                
+                <div class="mt-4 flex gap-2">
+                    <button onclick="copyWaReport()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-copy"></i> COPY
+                    </button>
+                    <button onclick="shareWaReport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-2">
+                        <i class="fa-brands fa-whatsapp"></i> WHATSAPP
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL KEMASKINI FIZIKAL -->
+    <div id="modal-update" data-html2canvas-ignore="true" class="modal hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl w-full max-w-xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 id="modal-title" class="text-lg font-bold text-slate-800">KEMASKINI STATUS KERJA</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+            <input type="hidden" id="modal-row-index">
+            <div id="lock-warning" class="hidden bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center space-x-2"><i class="fa-solid fa-lock text-amber-600"></i><span>Kerja ini telah selesai dan dikunci.</span></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div><label class="font-bold block mb-1">TARIKH (Read-only)</label><input type="text" id="m-tarikh" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold block mb-1">BASELINE START (Read-only)</label><input type="text" id="m-base-start" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div class="md:col-span-2"><label class="font-bold block mb-1">BUTIRAN KERJA (Read-only)</label><input type="text" id="m-butiran" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold block mb-1">BASELINE FINISH (Read-only)</label><input type="text" id="m-base-finish" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold block mb-1">ACTUAL DURATION (Read-only)</label><input type="text" id="m-durasi" readonly class="w-full bg-slate-100 p-2 rounded border"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL PROGRESS (%) *</label><input type="number" id="m-peratus" min="0" max="100" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
+                <div>
+                    <label class="font-bold text-blue-700 block mb-1">STATUS *</label>
+                    <select id="m-status" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35" onchange="checkStatusChange()">
+                        <option value="Sedang Dijalankan">Sedang Dijalankan</option>
+                        <option value="Siap">Siap</option>
+                    </select>
+                </div>
+                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL START</label><input type="datetime-local" id="m-act-start" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35"></div>
+                <div><label class="font-bold text-blue-700 block mb-1">ACTUAL FINISH *</label><input type="datetime-local" id="m-act-finish" class="w-full p-2 rounded border border-blue-300 bg-blue-50/35" onchange="checkActualFinishInput()"></div>
+            </div>
+            <div class="border-t pt-4 flex justify-between gap-2">
+                <div class="flex gap-2">
+                    <button id="btn-save" onclick="saveUpdate()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SAVE</button>
+                    <!-- FUNGSI COPY & WHATSAPP DIKEMBALIKAN -->
+                    <button onclick="copyText()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold"><i class="fa-solid fa-copy mr-1"></i> COPY</button>
+                    <button onclick="whatsappShare()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold"><i class="fa-brands fa-whatsapp mr-1"></i> WHATSAPP</button>
+                </div>
+                <button onclick="closeModal()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold">TUTUP</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const API_URL = "https://sains-pd-api.apiz1335.workers.dev";
+        const KML_BASE_URL = "https://raw.githubusercontent.com/apiz1335-cmd/kml-water-supply-data-6/main/";
+        let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
+        let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
+        let refreshInterval = null; let timerInterval = null;
+        let currentRowFizikal = null;
+        let currentDataVersion = "0";
+        let isLiveMode = false;
+        
+        let userLevel = "guest";
+
+        // --- SISTEM SMART QUEUE & PENYIMPANAN FILTER (8 JAM) ---
+        let adminUpdateQueue = { rowUpdates: {}, b1Value: null, e1Value: null };
+        let syncTimeout = null;
+        const FILTER_EXPIRY_MS = 8 * 60 * 60 * 1000;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.replace('index.html'); return; }
+            
+            // --- FUNGSI MAX SESSION 8 JAM ---
+            let sessionStart = sessionStorage.getItem('pd_water_session_start');
+            if (!sessionStart) {
+                sessionStorage.setItem('pd_water_session_start', Date.now());
+            } else if (Date.now() - parseInt(sessionStart) > 8 * 60 * 60 * 1000) {
+                logout();
+                return;
+            }
+            
+            setInterval(() => {
+                let start = sessionStorage.getItem('pd_water_session_start');
+                if (start && Date.now() - parseInt(start) > 8 * 60 * 60 * 1000) {
+                    alert("Sesi log masuk anda telah tamat (Maksimum 8 Jam). Sila log masuk semula.");
+                    logout();
+                }
+            }, 60000); // Semak setiap 1 minit di background
+            // --------------------------------
+            
+            userLevel = (sessionStorage.getItem('pd_water_user_level') || 'guest').toLowerCase();
+            if (userLevel === 'admin') {
+                document.getElementById('nav-admin-recovery').classList.remove('hidden');
+                document.getElementById('nav-admin-whatsapp').classList.remove('hidden'); 
+            }
+
+            fetchData(true);
+            refreshInterval = setInterval(checkVersionAndFetch, 15000); 
+            timerInterval = setInterval(() => { if (activeTabName === 'fisik') renderPhysicalWork(); }, 60000); 
+        });
+
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted || !sessionStorage.getItem('pd_water_auth_token')) { window.location.replace('index.html'); }
+        });
+
+        function updateLiveBadge(isLive) {
+            const badge = document.getElementById('live-badge-container');
+            if (!badge) return;
+            if (isLive) { badge.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400">LIVE: ON</span>`; } 
+            else { badge.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-slate-500"></span><span class="text-slate-400">LIVE: OFF</span>`; }
+        }
+
+        async function downloadView(format) {
+            window.scrollTo(0, 0); const el = document.body; const printHeader = document.getElementById('print-header');
+            document.getElementById('print-tab-title').innerText = "LAPORAN: " + (document.getElementById(`nav-${activeTabName}`).innerText.replace(/[\[\]]/g, ''));
+            printHeader.classList.remove('hidden');
+            try {
+                const canvas = await html2canvas(el, { useCORS: true, scale: 1.5, backgroundColor: '#f8fafc' });
+                printHeader.classList.add('hidden'); const cleanTabName = activeTabName.toUpperCase();
+                if (format === 'png') {
+                    const link = document.createElement('a'); link.download = `Dashboard_${cleanTabName}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+                } else if (format === 'pdf') {
+                    const { jsPDF } = window.jspdf; const pdf = new jsPDF(canvas.width > canvas.height ? 'l' : 'p', 'px', [canvas.width, canvas.height]);
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, canvas.width, canvas.height); pdf.save(`Dashboard_${cleanTabName}.pdf`);
+                }
+            } catch (err) { console.error(err); printHeader.classList.add('hidden'); }
+        }
+
+        async function checkVersionAndFetch() {
+            if (!isLiveMode) return; 
+            try {
+                const res = await (await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "checkVersion" }) })).json();
+                if (res && res.success && res.version && currentDataVersion !== "0" && currentDataVersion !== res.version) {
+                    currentDataVersion = res.version;
+                    if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance("New Update."));
+                    if (Notification.permission === "granted") new Notification("Sistem Air", {body: "Data dikemaskini!"});
+                    fetchData(false); 
+                } else if (currentDataVersion === "0") { currentDataVersion = res.version; }
+            } catch (err) {}
+        }
+
+        function logout() { 
+            sessionStorage.removeItem('pd_water_auth_token'); 
+            sessionStorage.removeItem('pd_water_user_level'); 
+            sessionStorage.removeItem('pd_water_session_start');
+            window.location.replace('index.html'); 
+        }
+        
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('custom-toast'); document.getElementById('toast-msg').innerText = message;
+            document.getElementById('toast-icon').className = isError ? "fa-solid fa-circle-exclamation text-rose-400" : "fa-solid fa-circle-check text-emerald-400";
+            toast.classList.remove('hidden', 'translate-y-2', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-2', 'opacity-0'); setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
+        }
+        
+        function showLoading(show) { document.getElementById('loading-screen').style.display = show ? 'flex' : 'none'; }
+
+        async function fetchData(isInitial) {
+            if (isInitial) showLoading(true);
+            try {
+                const res = await (await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDashboardData", forceRefresh: !isInitial }) })).json();
+                if (res && res.success) {
+                    globalData = res.data || []; globalDataFizikal = res.dataFizikal || [];
+                    document.getElementById('last-updated').innerText = "Last Updated: " + (res.lastUpdated || '--');
+                    
+                    if (res.e1Value !== undefined) {
+                        isLiveMode = (String(res.e1Value).trim().toUpperCase() === 'YA');
+                        updateLiveBadge(isLiveMode);
+                        if(userLevel === 'admin') document.getElementById('admin-e1-select').value = String(res.e1Value).trim().toUpperCase();
+                    }
+
+                    if ((isInitial || isLiveMode) && res.b1Value) {
+                        const val = res.b1Value.toUpperCase();
+                        if(userLevel === 'admin') document.getElementById('admin-b1-select').value = val;
+                        
+                        if (isInitial || (activeTabName !== 'admin-recovery' && activeTabName !== 'admin-whatsapp' && activeTabName !== 'fisik')) {
+                            if (val.includes("LINGGI")) activeTabName = 'linggi'; 
+                            else if (val.includes("SAWAH")) activeTabName = 'sawah'; 
+                            else if (val.includes("SEREMBAN") || val.includes("NGOI")) activeTabName = 'seremban';
+                        }
+                    }
+                    switchTab(activeTabName, true);
+                    if (activeTabName === 'fisik' && !isInitial) renderPhysicalWork();
+                    if (activeTabName === 'admin-recovery' && !isInitial) { populateAdminFilters('refresh'); }
+                    if (activeTabName === 'admin-whatsapp' && !isInitial) { populateWaFilters(); }
+                }
+            } catch (err) {} finally { if (isInitial) showLoading(false); }
+        }
+
+        async function manualRefresh() {
+            const btn = document.getElementById('refresh-btn'); btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i><span>MENGEKEMASKINI...</span>`;
+            await fetchData(false);
+            btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span class="hidden sm:inline">REFRESH</span>`;
+            showToast("Data Dikemaskini!");
+        }
+
+        function switchTab(tabKey, force = false) {
+            if (activeTabName === tabKey && !force) return; activeTabName = tabKey;
+            ['fisik', 'linggi', 'sawah', 'seremban', 'admin-recovery', 'admin-whatsapp'].forEach(k => { 
+                const btn = document.getElementById(`nav-${k}`); 
+                if (btn) btn.classList.remove('active-tab'); 
+            });
+            const activeBtn = document.getElementById(`nav-${tabKey}`); if (activeBtn) activeBtn.classList.add('active-tab');
+            
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabKey === 'admin-recovery' ? 'admin-recovery' : (tabKey === 'admin-whatsapp' ? 'admin-whatsapp' : (tabKey === 'fisik' ? 'fisik' : 'lra-container'))}`).classList.remove('hidden');
+
+            if (tabKey === 'fisik') renderPhysicalWork();
+            else if (tabKey === 'admin-recovery') { populateAdminFilters('init'); }
+            else if (tabKey === 'admin-whatsapp') { populateWaFilters(); }
+            else { renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
+        }
+
+        // ==========================================
+        //  FUNGSI ADMIN LAPORAN WHATSAPP
+        // ==========================================
+        
+        function populateWaFilters() {
+            if(globalData.length < 5) return;
+            const lraSel = document.getElementById('wa-filter-lra');
+            let setLRA = new Set();
+            for(let i=4; i<globalData.length; i++){
+                if(globalData[i] && globalData[i][0]) setLRA.add(globalData[i][0]);
+            }
+            lraSel.innerHTML = '<option value="ALL">SEMUA LRA</option>' + Array.from(setLRA).map(x=>`<option value="${x}">${x}</option>`).join('');
+            populateWaSecondary();
+        }
+
+        function populateWaSecondary() {
+            const lraSel = document.getElementById('wa-filter-lra').value;
+            const secSel = document.getElementById('wa-filter-secondary');
+            let setSec = new Set();
+            for(let i=4; i<globalData.length; i++){
+                let r = globalData[i];
+                if(!r || !r[0]) continue;
+                if(lraSel !== 'ALL' && r[0] !== lraSel) continue;
+                if(r[2]) setSec.add(r[2]);
+            }
+            secSel.innerHTML = '<option value="ALL">SEMUA SECONDARY SUPPLY</option>' + Array.from(setSec).map(x=>`<option value="${x}">${x}</option>`).join('');
+        }
+
+        function getRoundedTime() {
+            let d = new Date();
+            let h = d.getHours();
+            let m = d.getMinutes();
+            
+            if (m >= 55) { h += 1; m = 0; } 
+            else if (m >= 25) { m = 30; } 
+            else { m = 0; }
+            
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12; h = h ? h : 12;
+            let mStr = m === 0 ? '00' : '30';
+            return `${h}.${mStr}${ampm.toLowerCase()}`; 
+        }
+
+        function janaLaporanWA() {
+            if(globalData.length < 5) { showToast("Data tiada. Sila refresh.", true); return; }
+            
+            const selLra = document.getElementById('wa-filter-lra').value;
+            const selSec = document.getElementById('wa-filter-secondary').value;
+            
+            let totalKawasan = 0, recoveredKawasan = 0;
+            let totalAkaun = 0, recoveredAkaun = 0;
+            let totalPenggunaan = 0, weightedStatusSum = 0;
+            
+            let lraName = selLra === 'ALL' ? 'KESELURUHAN (SEMUA LRA)' : selLra;
+            if (selSec !== 'ALL') lraName += ` (${selSec})`;
+            
+            for (let i = 4; i < globalData.length; i++) {
+                let r = globalData[i];
+                if (!r || !r[0]) continue;
+                if (selLra !== 'ALL' && r[0] !== selLra) continue;
+                if (selSec !== 'ALL' && r[2] !== selSec) continue;
+                
+                let statusStr = String(r[8]||'').toUpperCase();
+                let statusVal = (r[8]===true || statusStr==='TRUE' || statusStr==='DONE' || statusStr==='1') ? 100 : (parseFloat(statusStr.replace(/[^0-9.]/g, ''))||0);
+                if (statusVal > 100) statusVal = 100;
+                
+                let akaun = parseFloat(r[6]) || 0;
+                let penggunaan = parseFloat(r[7]) || 0;
+                
+                totalKawasan++;
+                if (statusVal >= 100) recoveredKawasan++;
+                
+                totalAkaun += akaun;
+                if (statusVal >= 100) recoveredAkaun += akaun;
+                
+                totalPenggunaan += penggunaan;
+                weightedStatusSum += (penggunaan * (statusVal / 100));
+            }
+            
+            let overallPct = totalPenggunaan > 0 ? (weightedStatusSum / totalPenggunaan) * 100 : 0;
+            if (totalKawasan === 0) overallPct = 0;
+            
+            let d = new Date();
+            let dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
+            
+            let reportStr = `*Laporan Status Recovery Daerah Port Dickson*\n*LRA* - ${lraName}\n*Tarikh* - ${dateStr}\n*Masa* - ${getRoundedTime()}\n*Status Recovery (%)* - ${overallPct.toFixed(2)}%\n*Status Kawasan* - ${recoveredKawasan} / ${totalKawasan}\n*Status Akaun Recovery* - ${recoveredAkaun.toLocaleString('en-US')} / ${totalAkaun.toLocaleString('en-US')}`;
+
+            document.getElementById('wa-report-text').value = reportStr;
+            showToast("Laporan Berjaya Dijana!");
+        }
+
+        function copyWaReport() {
+            let text = document.getElementById('wa-report-text').value;
+            if(!text) { showToast("Sila jana laporan dahulu.", true); return; }
+            navigator.clipboard.writeText(text).then(() => showToast("Salinan Berjaya!")).catch(e => showToast("Ralat salin", true));
+        }
+
+        function shareWaReport() {
+            let text = document.getElementById('wa-report-text').value;
+            if(!text) { showToast("Sila jana laporan dahulu.", true); return; }
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        // ==========================================
+        //  FUNGSI ADMIN RECOVERY STATUS & UNTICK ALL
+        // ==========================================
+        
+        function confirmUntickAll() {
+            const lraFilter = document.getElementById('admin-filter-lra').value;
+            const kolamFilter = document.getElementById('admin-filter-kolam').value;
+            const secFilter = document.getElementById('admin-filter-secondary').value;
+
+            if (!confirm("Adakah anda pasti mahu UNTICK (padam) semua kawasan yang sedang dipaparkan?")) {
+                return;
+            }
+
+            let hasChanges = false;
+
+            for(let i = 4; i < globalData.length; i++) {
+                let r = globalData[i]; if(!r || !r[0]) continue;
+                if (lraFilter !== 'ALL' && r[0] !== lraFilter) continue;
+                if (kolamFilter !== 'ALL' && r[1] !== kolamFilter) continue;
+                if (secFilter !== 'ALL' && r[2] !== secFilter) continue;
+
+                const statusVal = String(r[8] || '').trim().toUpperCase();
+                const isChecked = (statusVal === 'DONE' || statusVal === 'TRUE' || statusVal === '1');
+
+                if (isChecked) {
+                    globalData[i][8] = ""; 
+                    adminUpdateQueue.rowUpdates[i + 1] = "";
+                    hasChanges = true;
+                }
+            }
+
+            if (hasChanges) {
+                renderAdminTable();
+                triggerSync();
+                showToast("Semua kawasan dipaparkan telah di-untick.");
+            } else {
+                showToast("Tiada kawasan untuk di-untick.");
+            }
+        }
+        
+        function saveFiltersToLocal() {
+            const lra = document.getElementById('admin-filter-lra').value;
+            const kolam = document.getElementById('admin-filter-kolam').value;
+            const sec = document.getElementById('admin-filter-secondary').value;
+            const filterData = { lra, kolam, sec, timestamp: Date.now() };
+            localStorage.setItem('adminRecoveryFilters', JSON.stringify(filterData));
+        }
+
+        function getFiltersFromLocal() {
+            const stored = localStorage.getItem('adminRecoveryFilters');
+            if (!stored) return null;
+            try {
+                const parsed = JSON.parse(stored);
+                if (Date.now() - parsed.timestamp > FILTER_EXPIRY_MS) {
+                    localStorage.removeItem('adminRecoveryFilters'); return null;
+                }
+                return parsed;
+            } catch (e) { return null; }
+        }
+
+        function populateAdminFilters(triggerSource = 'init') {
+            if(globalData.length < 5) return;
+            const lraSel = document.getElementById('admin-filter-lra');
+            const kolamSel = document.getElementById('admin-filter-kolam');
+            const secSel = document.getElementById('admin-filter-secondary');
+            
+            let targetLra = lraSel.value, targetKolam = kolamSel.value, targetSec = secSel.value;
+            if (triggerSource === 'init' || triggerSource === 'refresh') {
+                const saved = getFiltersFromLocal();
+                if (saved) { targetLra = saved.lra; targetKolam = saved.kolam; targetSec = saved.sec; }
+            }
+
+            let setLRA = new Set(), setKolam = new Set(), setSec = new Set();
+            for(let i=4; i<globalData.length; i++){
+                let r = globalData[i]; if(!r || !r[0]) continue;
+                setLRA.add(r[0]);
+                if((triggerSource === 'lra' || triggerSource === 'init' || triggerSource === 'refresh') && targetLra !== 'ALL' && r[0] !== targetLra) continue;
+                setKolam.add(r[1]);
+                if(triggerSource !== 'init' && triggerSource !== 'refresh' && targetKolam !== 'ALL' && r[1] !== targetKolam) continue;
+                if(r[2]) setSec.add(r[2]);
+            }
+
+            if(triggerSource === 'init' || triggerSource === 'refresh') { 
+                lraSel.innerHTML = '<option value="ALL">SEMUA</option>' + Array.from(setLRA).map(x=>`<option value="${x}">${x}</option>`).join(''); 
+                if (setLRA.has(targetLra)) lraSel.value = targetLra; else lraSel.value = 'ALL';
+            }
+            if(triggerSource === 'init' || triggerSource === 'lra' || triggerSource === 'refresh') { 
+                kolamSel.innerHTML = '<option value="ALL">SEMUA</option>' + Array.from(setKolam).map(x=>`<option value="${x}">${x}</option>`).join(''); 
+                if (setKolam.has(targetKolam)) kolamSel.value = targetKolam; else kolamSel.value = 'ALL';
+            }
+            secSel.innerHTML = '<option value="ALL">SEMUA</option>' + Array.from(setSec).map(x=>`<option value="${x}">${x}</option>`).join(''); 
+            if (setSec.has(targetSec)) secSel.value = targetSec; else secSel.value = 'ALL';
+            
+            saveFiltersToLocal(); renderAdminTable();
+        }
+
+        function saveFiltersAndRender() { saveFiltersToLocal(); renderAdminTable(); }
+
+        function resetAdminFilters() {
+            localStorage.removeItem('adminRecoveryFilters');
+            document.getElementById('admin-filter-lra').value = 'ALL';
+            populateAdminFilters('init'); 
+        }
+
+        function renderAdminTable() {
+            const lraFilter = document.getElementById('admin-filter-lra').value;
+            const kolamFilter = document.getElementById('admin-filter-kolam').value;
+            const secFilter = document.getElementById('admin-filter-secondary').value;
+            const tbody = document.getElementById('admin-table-body');
+            let html = '';
+
+            for(let i = 4; i < globalData.length; i++) {
+                let r = globalData[i]; if(!r || !r[0]) continue;
+                if (lraFilter !== 'ALL' && r[0] !== lraFilter) continue;
+                if (kolamFilter !== 'ALL' && r[1] !== kolamFilter) continue;
+                if (secFilter !== 'ALL' && r[2] !== secFilter) continue;
+
+                const sheetRowNumber = i + 1;
+                const statusVal = String(r[8] || '').trim().toUpperCase();
+                const isChecked = (statusVal === 'DONE' || statusVal === 'TRUE' || statusVal === '1');
+
+                html += `<tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-3 font-semibold text-slate-700">${escapeHtml(r[0])}</td>
+                    <td class="p-3 text-slate-600">${escapeHtml(r[1])}</td>
+                    <td class="p-3 text-slate-600">${escapeHtml(r[2])}</td>
+                    <td class="p-3 text-slate-600">${escapeHtml(r[3])}</td>
+                    <td class="p-3 text-center">
+                        <input type="checkbox" class="admin-checkbox" ${isChecked ? 'checked' : ''} onchange="queueRowUpdate(${sheetRowNumber}, this.checked, ${i})">
+                    </td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function queueGlobalUpdate(key, value) { adminUpdateQueue[key] = value; triggerSync(); }
+        function queueRowUpdate(sheetRowNumber, isChecked, arrayIndex) {
+            const newStatus = isChecked ? "DONE" : "";
+            globalData[arrayIndex][8] = newStatus; 
+            adminUpdateQueue.rowUpdates[sheetRowNumber] = newStatus; triggerSync();
+        }
+
+        function triggerSync() {
+            const indicator = document.getElementById('sync-indicator');
+            indicator.classList.remove('hidden');
+            indicator.innerHTML = `<i class="fa-solid fa-cloud-arrow-up fa-bounce"></i><span>Menyimpan...</span>`;
+            indicator.classList.remove('bg-emerald-600', 'bg-rose-600'); indicator.classList.add('bg-blue-600');
+            if (syncTimeout) clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(processAdminSync, 1200); 
+        }
+
+        async function processAdminSync() {
+            const payload = { 
+                action: "updateRecoveryAdmin", b1Value: adminUpdateQueue.b1Value, e1Value: adminUpdateQueue.e1Value,
+                rowUpdates: Object.keys(adminUpdateQueue.rowUpdates).map(row => ({ row: parseInt(row), status: adminUpdateQueue.rowUpdates[row] }))
+            };
+            adminUpdateQueue = { rowUpdates: {}, b1Value: null, e1Value: null };
+            const authToken = sessionStorage.getItem('pd_water_auth_token') || '';
+            const indicator = document.getElementById('sync-indicator');
+
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify(payload) });
+                const res = await response.json();
+                if (res && res.success) {
+                    indicator.classList.remove('bg-blue-600'); indicator.classList.add('bg-emerald-600');
+                    indicator.innerHTML = `<i class="fa-solid fa-check"></i><span>Tersimpan</span>`;
+                    setTimeout(() => indicator.classList.add('hidden'), 2000);
+                } else {
+                    indicator.classList.remove('bg-blue-600'); indicator.classList.add('bg-rose-600');
+                    indicator.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Ralat!</span>`;
+                    showToast(res.error || 'Gagal menyimpan.', true); setTimeout(() => indicator.classList.add('hidden'), 3000);
+                }
+            } catch(e) {
+                indicator.classList.remove('bg-blue-600'); indicator.classList.add('bg-rose-600');
+                indicator.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Ralat Network</span>`;
+                setTimeout(() => indicator.classList.add('hidden'), 3000);
+            }
+        }
+
+        // ==========================================
+        //  FUNGSI FIZIKAL & PETA DI BAWAH 
+        // ==========================================
+        function parseCustomDate(str) {
+            if (!str) return null; let cleanStr = String(str).trim();
+            if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(cleanStr)) { let d = new Date(cleanStr.replace(/-/g, '/')); if (!isNaN(d.getTime())) return d; }
+            let parts = cleanStr.split(/[\s/\-:]+/);
+            if (parts.length >= 3) {
+                let p1 = parseInt(parts[0], 10), p2 = parseInt(parts[1], 10) - 1, p3 = parseInt(parts[2], 10);
+                let day, month, year;
+                if (p3 > 31) { day = p1; month = p2; year = p3; } else if (p1 > 31) { year = p1; month = p2; day = p3; } else { day = p1; month = p2; year = p3; if (year < 100) year += 2000; }
+                let hour = parts[3] ? parseInt(parts[3], 10) : 0, min = parts[4] ? parseInt(parts[4], 10) : 0, sec = 0, ampm = '';
+                if (parts.length > 5) { let lastPart = parts[parts.length - 1].toUpperCase(); if (lastPart === 'AM' || lastPart === 'PM') { ampm = lastPart; } else { sec = parseInt(parts[5], 10) || 0; if (parts.length > 6) ampm = parts[parts.length - 1].toUpperCase(); } }
+                if (ampm === 'PM' && hour < 12) hour += 12; if (ampm === 'AM' && hour === 12) hour = 0;
+                let parsed = new Date(year, month, day, hour, min, sec); if (!isNaN(parsed.getTime())) return parsed;
+            }
+            let dFallback = new Date(cleanStr); if (!isNaN(dFallback.getTime())) return dFallback; return null;
+        }
+
+        function formatToDMYHM(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return str || '-'; let hr = d.getHours(); let ampm = hr >= 12 ? 'PM' : 'AM'; hr = hr % 12; hr = hr ? hr : 12; return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(hr).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ampm}`; }
+        function formatToDatetimeLocal(str) { let d = parseCustomDate(str); if (!d || isNaN(d.getTime())) return ''; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+        function formatDurationText(diffMs) { if (diffMs < 0) diffMs = 0; let totalMins = Math.floor(diffMs / (1000 * 60)); return `${Math.floor(totalMins / (60 * 24))} hari ${Math.floor((totalMins % (60 * 24)) / 60)} jam`; }
+
+        function calculateBaselineProgress(baseStartStr, baseFinishStr, actualFinishStr) {
+            let start = parseCustomDate(baseStartStr), finish = parseCustomDate(baseFinishStr);
+            if (!start || !finish || isNaN(start.getTime()) || isNaN(finish.getTime())) return "0%";
+            let totalDuration = finish.getTime() - start.getTime(); if (totalDuration <= 0) return "100%";
+            let actFinish = parseCustomDate(actualFinishStr);
+            let targetTime = (actFinish && !isNaN(actFinish.getTime())) ? actFinish.getTime() : new Date().getTime();
+            let pct = ((targetTime - start.getTime()) / totalDuration) * 100;
+            if (pct < 0) return "0%"; if (pct <= 100) return Math.round(pct) + "%";
+            return `100% + ${Math.round(pct - 100)}% delay`;
+        }
+
+        function renderPhysicalWork() {
+            if (!globalDataFizikal || globalDataFizikal.length === 0) return;
+            let totalTugas = 0, onTime = 0, lewat = 0, inProgress = 0, berjalanLewat = 0, totalPercentSum = 0, percentCount = 0;
+            let labels = [], baselineData = [], actualData = [], tbodyHtml = '';
+            let startIndex = (globalDataFizikal[0] && String(globalDataFizikal[0][0]).toUpperCase() !== 'TARIKH') ? 0 : 1; let now = new Date().getTime();
+
+            for(let i = startIndex; i < globalDataFizikal.length; i++) {
+                let row = globalDataFizikal[i]; if(!row || !row[1]) continue; 
+                totalTugas++; let status = String(row[8] || '').trim().toUpperCase(); let rawPeratus = row[9]; let pctValue = 0;
+                if (rawPeratus !== null && rawPeratus !== undefined && rawPeratus !== '') {
+                    let num = parseFloat(String(rawPeratus).replace('%', '').trim());
+                    if (!isNaN(num)) { pctValue = (num > 0 && num <= 1) ? num * 100 : num; if (pctValue > 100) pctValue = 100; if (pctValue < 0) pctValue = 0; totalPercentSum += pctValue; percentCount++; }
+                }
+                let baselineFinishDate = parseCustomDate(row[3]); let actualStartDate = parseCustomDate(row[4]); let actualFinishDate = parseCustomDate(row[5]);
+                let baselineProgressText = calculateBaselineProgress(row[2], row[3], row[5]);
+                let isRunning = (!actualFinishDate || isNaN(actualFinishDate.getTime()));
+                if (isRunning && baselineFinishDate && !isNaN(baselineFinishDate.getTime()) && now > baselineFinishDate.getTime()) berjalanLewat++;
+                if(status.includes('LEWAT')) lewat++; else if(status.includes('SIAP') || status.includes('JADUAL')) onTime++; else inProgress++;
+                
+                let durationDisplay = '-', durationHours = 0;
+                if (actualFinishDate && !isNaN(actualFinishDate.getTime()) && actualStartDate && !isNaN(actualStartDate.getTime())) {
+                    let diffMs = actualFinishDate.getTime() - actualStartDate.getTime(); durationDisplay = formatDurationText(diffMs); durationHours = diffMs / 3600000;
+                } else {
+                    if (baselineFinishDate && !isNaN(baselineFinishDate.getTime())) {
+                        if (now > baselineFinishDate.getTime()) {
+                            durationDisplay = `<span class="text-rose-600 font-bold">${formatDurationText(now - baselineFinishDate.getTime())} LEWAT</span>`;
+                            durationHours = (baselineFinishDate.getTime() - (actualStartDate ? actualStartDate.getTime() : now)) / 3600000 + (now - baselineFinishDate.getTime()) / 3600000;
+                        } else { durationDisplay = `<span class="text-blue-600 font-medium">Baki ${formatDurationText(baselineFinishDate.getTime() - now)} lagi</span>`; durationHours = 0; }
+                    } else if (actualStartDate && !isNaN(actualStartDate.getTime())) { 
+                        durationDisplay = `<span class="text-amber-600 font-semibold">${formatDurationText(now - actualStartDate.getTime())} (Live)</span>`; durationHours = (now - actualStartDate.getTime()) / 3600000;
+                    } else { 
+                        let fallbackDur = String(row[7] || '-');
+                        if (fallbackDur.includes('-') && fallbackDur !== '-') { durationDisplay = '-'; } 
+                        else { durationDisplay = fallbackDur; }
+                    }
+                }
+                labels.push(row[1].length > 25 ? row[1].substring(0, 25) + '...' : row[1]); baselineData.push((String(row[6] || '0').match(/(\d+)/) ? parseInt(String(row[6] || '0').match(/(\d+)/)[1]) * 24 : 0)); actualData.push(Math.round(durationHours));
+                let sb = status.includes('LEWAT') ? 'bg-rose-100 text-rose-700' : (status.includes('SIAP') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700');
+                let pctDisplay = (percentCount > 0 && rawPeratus !== null && rawPeratus !== '') ? `${Math.round(pctValue)}%` : '-';
+                tbodyHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-3 text-center text-slate-600">${formatToDMYHM(row[0])}</td><td class="p-3 text-center text-slate-600">${formatToDMYHM(row[3])}</td><td class="p-3 text-center font-bold text-slate-700">${baselineProgressText}</td>
+                    <td class="p-3 text-center font-semibold text-slate-800">${escapeHtml(row[1])}</td><td class="p-3 text-center font-bold text-blue-600">${pctDisplay}</td><td class="p-3 text-center text-slate-600">${formatToDMYHM(row[4])}</td>
+                    <td class="p-3 text-center text-slate-600">${row[5] ? formatToDMYHM(row[5]) : '<span class="text-amber-500 italic">Masih Berjalan</span>'}</td><td class="p-3 text-center font-bold">${durationDisplay}</td>
+                    <td class="p-3 text-center"><span class="${sb} px-2 py-1 rounded text-[10px] font-bold uppercase">${escapeHtml(row[8]||'SEDANG BERJALAN')}</span></td>
+                    <td class="p-3 text-center" data-html2canvas-ignore="true"><button onclick="openUpdateModal(${i + 1})" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow">UPDATE</button></td></tr>`;
+            }
+            document.getElementById('kpi-tugas').innerText = totalTugas; document.getElementById('kpi-ontime').innerText = onTime; document.getElementById('kpi-lewat').innerText = lewat;
+            document.getElementById('kpi-inprogress').innerText = inProgress; document.getElementById('kpi-berjalan-lewat').innerText = berjalanLewat;
+            document.getElementById('kpi-purata').innerText = (percentCount > 0 ? (totalPercentSum / percentCount) : 0).toFixed(2) + "%"; document.getElementById('fisik-table-body').innerHTML = tbodyHtml;
+            renderFisikCharts(onTime, lewat, inProgress, labels, baselineData, actualData);
+        }
+
+        function openUpdateModal(rowNumber) {
+            let row = globalDataFizikal[rowNumber - 1]; if (!row) return; currentRowFizikal = row; document.getElementById('modal-row-index').value = rowNumber; 
+            document.getElementById('m-tarikh').value = formatToDMYHM(row[0]); document.getElementById('m-base-start').value = formatToDMYHM(row[2]); document.getElementById('m-base-finish').value = formatToDMYHM(row[3]); 
+            document.getElementById('m-butiran').value = row[1] || ''; 
+            
+            let sheetDurasi = String(row[7] || '');
+            if (sheetDurasi.includes('-')) { sheetDurasi = ''; }
+            document.getElementById('m-durasi').value = sheetDurasi;
+            
+            let rawPct = row[9]; let valPct = '';
+            if (rawPct !== null && rawPct !== '') { let num = parseFloat(String(rawPct).replace('%', '').trim()); if (!isNaN(num)) valPct = (num > 0 && num <= 1) ? Math.round(num * 100) : Math.round(num); }
+            document.getElementById('m-peratus').value = valPct; 
+            let statusSelect = document.getElementById('m-status'); let rowStatus = row[8] ? String(row[8]).trim() : "Sedang Dijalankan";
+            statusSelect.value = (rowStatus.toUpperCase().includes('SIAP')) ? "Siap" : "Sedang Dijalankan";
+            document.getElementById('m-act-start').value = formatToDatetimeLocal(row[4]); document.getElementById('m-act-finish').value = formatToDatetimeLocal(row[5]);
+            setModalLockState((row[5] !== "" && row[5] !== null && row[5] !== undefined)); document.getElementById('modal-update').classList.remove('hidden');
+        }
+
+        // FUNGSI COPY & WHATSAPP MODAL FIZIKAL
+        function generateShareText() {
+            let baseStart = document.getElementById('m-base-start').value;
+            let baseFinish = document.getElementById('m-base-finish').value;
+            let actFinishInput = document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : '';
+            let actFinishRaw = document.getElementById('m-act-finish').value ? formatToDMYHM(document.getElementById('m-act-finish').value) : (currentRowFizikal ? currentRowFizikal[5] : '');
+            let baseProg = currentRowFizikal ? calculateBaselineProgress(currentRowFizikal[2], currentRowFizikal[3], actFinishRaw) : calculateBaselineProgress(baseStart, baseFinish, actFinishInput);
+            let actProg = document.getElementById('m-peratus').value ? document.getElementById('m-peratus').value + "%" : "0%";
+            let actStart = document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : '';
+            let actDur = document.getElementById('m-durasi').value || '-';
+            return `*TARIKH* - ${document.getElementById('m-tarikh').value}\n*BUTIRAN KERJA* - ${document.getElementById('m-butiran').value}\n*BASELINE START* - ${baseStart}\n*BASELINE FINISH* - ${baseFinish}\n*BASELINE PROGRESS (%)* - ${baseProg}\n*ACTUAL PROGRESS (%)* - ${actProg}\n*ACTUAL START* - ${actStart}\n*ACTUAL FINISH* - ${actFinishInput}\n*ACTUAL DURATION* - ${actDur}`;
+        }
+
+        function copyText() { navigator.clipboard.writeText(generateShareText()).then(() => showToast("Salinan Berjaya!")).catch(e => showToast("Ralat salin", true)); }
+        function whatsappShare() { window.open(`https://wa.me/?text=${encodeURIComponent(generateShareText())}`, '_blank'); }
+
+        function checkActualFinishInput() { if (document.getElementById('m-act-finish').value) { let p = document.getElementById('m-peratus'), s = document.getElementById('m-status'); if (!p.value || p.value < 100) p.value = 100; s.value = 'Siap'; } }
+        function checkStatusChange() { let s = document.getElementById('m-status').value, p = document.getElementById('m-peratus'); if (s === 'Siap') { if (!p.value || p.value < 100) p.value = 100; } }
+        function setModalLockState(isLocked) {
+            ['m-peratus','m-status','m-act-start','m-act-finish'].forEach(id => { let el = document.getElementById(id); el.disabled = isLocked; if(isLocked) el.classList.add('bg-slate-100','text-slate-500'); else el.classList.remove('bg-slate-100','text-slate-500'); });
+            let btn = document.getElementById('btn-save'); btn.disabled = isLocked;
+            if(isLocked){ btn.classList.add('opacity-55','cursor-not-allowed'); document.getElementById('lock-warning').classList.remove('hidden'); } else { btn.classList.remove('opacity-55','cursor-not-allowed'); document.getElementById('lock-warning').classList.add('hidden'); }
+        }
+        function closeModal() { document.getElementById('modal-update').classList.add('hidden'); }
+
+        async function saveUpdate() {
+            let rowNumber = parseInt(document.getElementById('modal-row-index').value, 10);
+            let peratusVal = document.getElementById('m-peratus').value.trim(), statusVal = document.getElementById('m-status').value, actFinishVal = document.getElementById('m-act-finish').value;
+            if (statusVal === 'Siap' && !actFinishVal) { showToast("Sila isi Actual Finish.", true); return; }
+            if (peratusVal !== "") { let num = parseFloat(peratusVal); if (isNaN(num) || num < 0 || num > 100) { showToast("Sila masukkan Actual Progress 0 - 100.", true); return; } }
+            let formData = { peratus: peratusVal, status: statusVal, actualStart: document.getElementById('m-act-start').value ? formatToDMYHM(document.getElementById('m-act-start').value) : "", actualFinish: actFinishVal ? formatToDMYHM(actFinishVal) : "" };
+            const btn = document.getElementById('btn-save'); let originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> MENYIMPAN...`;
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token')}` }, body: JSON.stringify({ action: "updatePhysicalWork", rowNumber: rowNumber, formData: formData }) });
+                const res = await response.json();
+                if (res && res.success) { 
+                    showToast("Selesai Kemaskini"); document.getElementById('m-tarikh').value = formatToDMYHM(new Date().toString());
+                    if (actFinishVal) setModalLockState(true); fetchData(false); 
+                } else { showToast("Ralat: " + (res ? res.error : 'Unknown'), true); }
+            } catch (err) { showToast("Ralat kemaskini.", true); }
+            btn.disabled = false; btn.innerHTML = originalText;
+        }
+
+        function renderFisikCharts(onTime, lewat, inProgress, labels, baselineData, actualData) {
+            if (chartFisikStatusInst) { chartFisikStatusInst.data.datasets[0].data = [onTime, lewat, inProgress]; chartFisikStatusInst.update(); } 
+            else { chartFisikStatusInst = new Chart(document.getElementById('chartFisikStatus').getContext('2d'), { type: 'doughnut', data: { labels: ['Siap', 'Lewat', 'Berjalan'], datasets: [{ data: [onTime, lewat, inProgress], backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'] }] }, options: { maintainAspectRatio: false } }); }
+            if (chartFisikDurInst) { chartFisikDurInst.data.labels = labels; chartFisikDurInst.data.datasets[0].data = baselineData; chartFisikDurInst.data.datasets[1].data = actualData; chartFisikDurInst.update(); } 
+            else { chartFisikDurInst = new Chart(document.getElementById('chartFisikDuration').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Baseline', data: baselineData, backgroundColor: '#cbd5e1' }, { label: 'Actual', data: actualData, backgroundColor: '#3b82f6' }] }, options: { maintainAspectRatio: false } }); }
+        }
+
+        function onSecondaryFilterChange() { renderLraDashboard(activeTabName); }
+
+        function renderLraDashboard(key) {
+            let allRows = [];
+            for (let i = 4; i < globalData.length; i++) {
+                let r = globalData[i]; if (!r || (!r[0] && !r[1])) continue;
+                let isMatch = false, lraVal = String(r[0]||'').toUpperCase(), kolamVal = String(r[1]||'').toUpperCase();
+                if (key === 'seremban' && (lraVal.includes("NGOI") || kolamVal.includes("SEREMBAN BARAT"))) isMatch = true;
+                else if (key === 'linggi' && lraVal.includes("LINGGI") && !lraVal.includes("NGOI") && !kolamVal.includes("SEREMBAN BARAT")) isMatch = true;
+                else if (key === 'sawah' && lraVal.includes("SAWAH") && !lraVal.includes("NGOI") && !kolamVal.includes("SEREMBAN BARAT")) isMatch = true;
+                if (isMatch) {
+                    let statusStr = String(r[8]||'').toUpperCase(), statusVal = (r[8]===true || statusStr==='TRUE' || statusStr==='DONE' || statusStr==='1') ? 100 : (parseFloat(statusStr.replace(/[^0-9.]/g, ''))||0);
+                    if (statusVal > 100) statusVal = 100;
+                    allRows.push({ lra: r[0], kolam: r[1], secondary: r[2]||'General', kawasan: r[3], akaun: parseFloat(r[6])||0, penggunaan: parseFloat(r[7])||0, statusVal: statusVal });
+                }
+            }
+            const secondarySet = new Set(); allRows.forEach(r => secondarySet.add(r.secondary));
+            const filterSelect = document.getElementById('secondary-filter');
+            if (filterSelect) {
+                let currentVal = filterSelect.value, optionsHtml = `<option value="ALL">SEMUA SECONDARY SUPPLY</option>`;
+                Array.from(secondarySet).sort().forEach(sec => optionsHtml += `<option value="${sec}">${sec}</option>`);
+                filterSelect.innerHTML = optionsHtml; filterSelect.value = secondarySet.has(currentVal) ? currentVal : 'ALL';
+            }
+            let filteredRows = (filterSelect && filterSelect.value !== 'ALL') ? allRows.filter(r => r.secondary === filterSelect.value) : allRows;
+            let secondaryMap = {}, lraTotalUsage = 0, lraWeightedSum = 0;
+            
+            filteredRows.forEach(r => {
+                let w = r.penggunaan * (r.statusVal / 100), sec = r.secondary;
+                if (!secondaryMap[sec]) secondaryMap[sec] = { totalUsage: 0, weightedStatusSum: 0, recoveredCount: 0 };
+                secondaryMap[sec].totalUsage += r.penggunaan; secondaryMap[sec].weightedStatusSum += w;
+                if (r.statusVal >= 100) secondaryMap[sec].recoveredCount += 1; 
+                lraTotalUsage += r.penggunaan; lraWeightedSum += w;
+            });
+            Object.keys(secondaryMap).forEach(sec => secondaryMap[sec].recoveryPct = secondaryMap[sec].totalUsage > 0 ? (secondaryMap[sec].weightedStatusSum / secondaryMap[sec].totalUsage) * 100 : 0);
+            
+            document.getElementById('kpi-kawasan').innerText = filteredRows.length;
+            document.getElementById('kpi-kawasan-recovery').innerText = `${filteredRows.filter(r => r.statusVal >= 100).length} / ${filteredRows.length}`;
+            document.getElementById('kpi-akaun-recovery').innerText = `${filteredRows.filter(r => r.statusVal >= 100).reduce((s, x) => s + x.akaun, 0).toLocaleString()} / ${filteredRows.reduce((s, x) => s + x.akaun, 0).toLocaleString()}`;
+            document.getElementById('kpi-penggunaan').innerText = (lraTotalUsage / 30).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " m³/day";
+            document.getElementById('kpi-recovery').innerText = (lraTotalUsage > 0 ? (lraWeightedSum / lraTotalUsage) * 100 : 0).toFixed(2) + "%";
+            
+            renderSecondaryCharts(secondaryMap); renderMap(filteredRows, secondaryMap);
+        }
+
+        function renderSecondaryCharts(secondaryMap) {
+            const labels = Object.keys(secondaryMap);
+            if (chartRecInstance) { chartRecInstance.data.labels = labels; chartRecInstance.data.datasets[0].data = labels.map(s => secondaryMap[s].recoveryPct); chartRecInstance.update(); } 
+            else { chartRecInstance = new Chart(document.getElementById('chartRecovery').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Recovery %', data: labels.map(s => secondaryMap[s].recoveryPct), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { max: 100 } } } }); }
+            if (chartUseInstance) { chartUseInstance.data.labels = labels; chartUseInstance.data.datasets[0].data = labels.map(s => secondaryMap[s].recoveredCount); chartUseInstance.update(); } 
+            else { chartUseInstance = new Chart(document.getElementById('chartUsage').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: 'Kawasan Pulih (Siap)', data: labels.map(s => secondaryMap[s].recoveredCount), backgroundColor: '#10b981' }] }, options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
+        }
+
+        function fetchKmlWithFallbackAsync(names) {
+            if (names.length === 0) return Promise.resolve(null);
+            let url = KML_BASE_URL + encodeURIComponent(names[0]);
+            return fetch(url).then(res => { if(!res.ok) throw new Error(); return res.text().then(txt => ({txt: txt, url: url})); }).catch(() => fetchKmlWithFallbackAsync(names.slice(1)));
+        }
+
+        async function renderMap(rows, secondaryMap) {
+            if (!map) { map = L.map('map', { renderer: L.canvas() }).setView([2.52, 101.95], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { crossOrigin: true }).addTo(map); }
+            if (window.mapFeatureGroup) { map.removeLayer(window.mapFeatureGroup); }
+            window.mapFeatureGroup = L.featureGroup().addTo(map); geoLayers = []; let drawnUrls = new Set();
+            let promises = rows.map(async r => {
+                let cLra = r.lra.trim(), cKolam = r.kolam.trim(), cSec = r.secondary.trim(), cKaw = r.kawasan.trim();
+                let names = [`${cLra}_${cKolam}_${cSec}_${cKaw}.kml`, `${cLra}_${cKolam}_${cSec} ${cKaw}.kml`, `${cLra}_${cKolam}_${cSec}.kml`, `${cLra}_${cKolam}_${cKaw}.kml`, `${cLra}_${cKolam}.kml`];
+                let result = await fetchKmlWithFallbackAsync(names);
+                if (result && !drawnUrls.has(result.url)) {
+                    drawnUrls.add(result.url); 
+                    let coords = new DOMParser().parseFromString(result.txt, "text/xml").getElementsByTagName("coordinates");
+                    let secPct = (secondaryMap && secondaryMap[r.secondary]) ? secondaryMap[r.secondary].recoveryPct : r.statusVal;
+                    let displayPct = Number.isInteger(secPct) ? secPct : parseFloat(secPct.toFixed(2));
+                    for (let n of coords) {
+                        let ll = n.textContent.trim().split(/\s+/).map(p => { let pt = p.split(','); return pt.length >= 2 ? [parseFloat(pt[1]), parseFloat(pt[0])] : null; }).filter(Boolean);
+                        if (ll.length > 0) {
+                            let col = displayPct <= 50 ? '#ef4444' : (displayPct <= 80 ? '#eab308' : (displayPct <= 95 ? '#84cc16' : '#22c55e'));
+                            let poly = L.polygon(ll, {color: col, weight: 2, fillColor: col, fillOpacity: 0.45}).addTo(window.mapFeatureGroup);
+                            poly.bindPopup(`<div class="p-2 space-y-1"><h4 class="font-bold">${escapeHtml(r.lra)}</h4><p class="text-xs"><b>Kolam:</b> ${escapeHtml(r.kolam)}</p><p class="text-xs"><b>Secondary:</b> ${escapeHtml(r.secondary)}</p><p class="text-xs"><b>Kawasan (Individu):</b> ${escapeHtml(r.kawasan||'-')} (${r.statusVal}%)</p><p class="text-xs"><b>Status Recovery:</b> <span class="font-bold">${displayPct}%</span></p></div>`);
+                            poly.bindTooltip(`${displayPct}%`, { permanent: true, direction: "center", className: "map-label" });
+                            geoLayers.push(poly);
+                        }
+                    }
+                }
+            });
+            await Promise.all(promises);
+            if (geoLayers.length > 0) map.fitBounds(window.mapFeatureGroup.getBounds(), { padding: [25, 25] });
+        }
+        
+        function locateUser() { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { map.setView([pos.coords.latitude, pos.coords.longitude], 15); L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(map).bindPopup("Lokasi Anda").openPopup(); }); }
+    </script>
+</body>
+</html>
