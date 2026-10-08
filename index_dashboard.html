@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STATUS PEMULIHAN BEKALAN AIR</title>
+    <title>SISTEM BEKALAN AIR PORT DICKSON</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,9 +17,24 @@
         .stretch-btn { transition: all 0.2s ease-in-out; }
         .stretch-btn:hover { transform: scale(1.03); }
         #map { height: 500px; width: 100%; border-radius: 0.5rem; z-index: 1; }
+        #demand-map { height: 580px; width: 100%; border-radius: 0.75rem; z-index: 1; }
         .modal { z-index: 1000; }
         .map-label { background-color: rgba(255, 255, 255, 0.85); border: 1px solid #333; border-radius: 4px; font-weight: 800; font-size: 11px; text-align: center; color: #111; padding: 2px 5px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         .admin-checkbox { width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: #10b981; }
+        .sidebar-link { transition: background-color .2s ease, color .2s ease, transform .2s ease; }
+        .sidebar-link:hover { transform: translateX(2px); }
+        .sidebar-link.active-module { background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; box-shadow: 0 10px 24px rgba(37, 99, 235, .28); }
+        .tank-marker-wrap { background: transparent; border: 0; }
+        .tank-marker { width: 34px; height: 34px; display: grid; place-items: center; border: 3px solid white; border-radius: 11px; color: white; background: #0284c7; box-shadow: 0 5px 16px rgba(15, 23, 42, .35); font-size: 15px; }
+        .tank-marker.inactive { background: #e11d48; }
+        .tank-marker.unknown { background: #64748b; }
+        .reservoir-popup .leaflet-popup-content { margin: 14px; min-width: 260px; }
+        .detail-grid dt { color: #64748b; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .detail-grid dd { color: #0f172a; font-size: .82rem; font-weight: 600; margin-top: .2rem; overflow-wrap: anywhere; }
+        @media (max-width: 767px) {
+            #demand-map { height: 460px; }
+            body.sidebar-open { overflow: hidden; }
+        }
     </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased" id="dashboard-body">
@@ -40,11 +55,39 @@
         <span>Menyimpan...</span>
     </div>
 
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-[55] bg-slate-950/60 backdrop-blur-sm md:hidden" data-html2canvas-ignore="true"></div>
+    <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 -translate-x-full md:translate-x-0 bg-slate-950 text-white border-r border-slate-800 shadow-2xl transition-transform duration-300" data-html2canvas-ignore="true">
+        <div class="h-full flex flex-col p-4">
+            <div class="flex items-center gap-3 px-2 py-4 border-b border-slate-800">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 grid place-items-center shadow-lg shadow-blue-950/50"><i class="fa-solid fa-droplet text-xl"></i></div>
+                <div><p class="text-[10px] tracking-[.18em] uppercase text-slate-400">Port Dickson</p><h2 class="text-sm font-black leading-tight">SISTEM BEKALAN AIR</h2></div>
+                <button onclick="toggleSidebar(false)" class="ml-auto md:hidden text-slate-400 hover:text-white p-2" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="pt-6 px-2"><p class="text-[10px] tracking-[.16em] uppercase text-slate-500 font-bold mb-3">Modul Utama</p></div>
+            <nav class="space-y-2">
+                <button id="module-recovery-btn" onclick="switchModule('recovery')" class="sidebar-link active-module w-full text-left rounded-xl p-3.5 flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-white/10 grid place-items-center shrink-0"><i class="fa-solid fa-arrows-rotate"></i></span>
+                    <span><b class="block text-sm">Pemulihan Bekalan Air</b><small class="block text-[11px] mt-1 text-current opacity-70">Status kerja dan recovery</small></span>
+                </button>
+                <button id="module-demand-btn" onclick="switchModule('demand')" class="sidebar-link w-full text-left rounded-xl p-3.5 flex items-start gap-3 text-slate-300 hover:bg-slate-900 hover:text-white">
+                    <span class="w-9 h-9 rounded-lg bg-white/10 grid place-items-center shrink-0"><i class="fa-solid fa-water"></i></span>
+                    <span><b class="block text-sm">Demand Bekalan Air</b><small class="block text-[11px] mt-1 text-current opacity-70">Kolam servis dan kapasiti</small></span>
+                </button>
+            </nav>
+            <div class="mt-auto rounded-xl bg-slate-900 border border-slate-800 p-3 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-slate-800 grid place-items-center"><i class="fa-solid fa-user-shield text-slate-300"></i></div>
+                <div class="min-w-0"><p class="text-[10px] uppercase tracking-wider text-slate-500">Tahap Akses</p><p id="sidebar-user-level" class="text-xs font-bold truncate">Pengguna</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="min-h-screen md:pl-72 transition-all" id="app-shell">
+
     <header class="bg-slate-900 text-white shadow-md" data-html2canvas-ignore="true">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center">
-            <div class="mb-3 lg:mb-0 text-center lg:text-left">
-                <h1 class="text-2xl font-bold tracking-tight">STATUS PEMULIHAN BEKALAN AIR</h1>
-                <p class="text-xs text-slate-400 mt-0.5">Port Dickson</p>
+            <div class="mb-3 lg:mb-0 text-center lg:text-left flex items-center gap-3">
+                <button onclick="toggleSidebar(true)" class="md:hidden w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700" aria-label="Buka menu"><i class="fa-solid fa-bars"></i></button>
+                <div><h1 class="text-2xl font-bold tracking-tight">SISTEM BEKALAN AIR PORT DICKSON</h1><p id="module-subtitle" class="text-xs text-slate-400 mt-0.5">Sistem Pemantauan Pemulihan Bekalan Air</p></div>
             </div>
             
             <div class="flex flex-wrap justify-center items-center gap-3">
@@ -71,7 +114,7 @@
         </div>
     </header>
 
-    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40" data-html2canvas-ignore="true">
+    <nav id="recovery-subnav" class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40" data-html2canvas-ignore="true">
         <div class="max-w-7xl mx-auto px-4 py-3 flex space-x-2 overflow-x-auto" id="main-nav-container">
             <button onclick="switchTab('fisik')" id="nav-fisik" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap active-tab">[ STATUS KERJA FIZIKAL ]</button>
             <button onclick="switchTab('linggi')" id="nav-linggi" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ LOJI LINGGI SUPPLY ]</button>
@@ -86,7 +129,7 @@
     </nav>
 
     <div id="print-header" class="hidden max-w-7xl mx-auto px-4 py-4 text-center">
-        <h1 class="text-3xl font-black text-slate-800">STATUS PEMULIHAN BEKALAN AIR (PORT DICKSON)</h1>
+        <h1 class="text-3xl font-black text-slate-800">SISTEM BEKALAN AIR PORT DICKSON</h1>
         <p class="text-sm text-slate-500 mt-1 font-bold" id="print-tab-title">LAPORAN KAWASAN</p>
     </div>
 
@@ -269,7 +312,58 @@
             </div>
         </section>
 
+        <!-- MODUL DEMAND BEKALAN AIR -->
+        <section id="tab-demand" class="space-y-6 hidden">
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-950 to-cyan-900 text-white p-6 md:p-8 shadow-xl">
+                <div class="absolute -right-14 -top-20 w-64 h-64 rounded-full bg-cyan-400/10 blur-2xl"></div>
+                <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+                    <div><p class="text-xs uppercase tracking-[.22em] text-cyan-300 font-bold">Kolam Servis Port Dickson</p><h2 class="text-2xl md:text-3xl font-black mt-2">Demand Bekalan Air Port Dickson</h2><p class="text-sm text-slate-300 mt-2 max-w-2xl">Paparan demand, kapasiti, sambungan dan lokasi aset berdasarkan tab KOLAM DETAILS.</p></div>
+                    <div id="demand-data-status" class="inline-flex items-center gap-2 self-start lg:self-auto rounded-full bg-white/10 border border-white/15 px-3 py-2 text-xs font-semibold"><span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>Menunggu data kolam</span></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+                <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Jumlah Kolam</p><h3 id="d-kpi-count" class="text-2xl font-black mt-1">0</h3></div>
+                <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Demand / Hari</p><h3 id="d-kpi-day" class="text-xl font-black mt-1 text-blue-700">0 m³</h3></div>
+                <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Demand / Bulan</p><h3 id="d-kpi-month" class="text-xl font-black mt-1 text-cyan-700">0 m³</h3></div>
+                <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Jumlah Sambungan</p><h3 id="d-kpi-connection" class="text-xl font-black mt-1 text-violet-700">0</h3></div>
+                <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200 col-span-2 lg:col-span-1"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Kapasiti Kolam</p><h3 id="d-kpi-capacity" class="text-xl font-black mt-1 text-emerald-700">0 ML</h3></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3" data-html2canvas-ignore="true">
+                <label class="md:col-span-2 relative"><span class="sr-only">Cari kolam</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i><input id="demand-search" oninput="applyDemandFilters()" type="search" placeholder="Cari nama kolam, tagging, mukim..." class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
+                <select id="demand-supply-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Supply From</option></select>
+                <select id="demand-status-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Status</option></select>
+            </div>
+
+            <div id="demand-error" class="hidden rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"></div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                <div class="xl:col-span-3 bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h3 class="font-bold text-slate-800"><i class="fa-solid fa-map-location-dot text-blue-600 mr-2"></i>Lokasi Kolam Servis</h3><p id="demand-map-count" class="text-xs text-slate-500 mt-1">0 lokasi dipaparkan</p></div><div class="flex gap-3 text-[11px] font-semibold"><span><i class="fa-solid fa-square text-sky-600 mr-1"></i>Aktif</span><span><i class="fa-solid fa-square text-rose-600 mr-1"></i>Tidak Aktif</span><span><i class="fa-solid fa-square text-slate-500 mr-1"></i>Tiada Status</span></div></div>
+                    <div id="demand-map"></div>
+                </div>
+                <div class="xl:col-span-2 space-y-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Demand Harian Tertinggi</h3><div class="relative h-64"><canvas id="chartDemandTop"></canvas></div></div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Bilangan Kolam Mengikut Supply</h3><div class="relative h-60"><canvas id="chartDemandSupply"></canvas></div></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-bold text-slate-800">Direktori Kolam Servis</h3><p id="demand-list-count" class="text-xs text-slate-500 mt-1">0 rekod</p></div></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-[11px] uppercase text-slate-500"><tr><th class="p-3">Nama Kolam</th><th class="p-3">Supply From</th><th class="p-3">Demand / Hari</th><th class="p-3">Sambungan</th><th class="p-3">Kapasiti (ML)</th><th class="p-3">Status</th><th class="p-3 text-center">Butiran</th></tr></thead><tbody id="demand-table-body"></tbody></table></div>
+            </div>
+        </section>
+
     </main>
+
+    <!-- MODAL BUTIRAN KOLAM -->
+    <div id="reservoir-detail-modal" data-html2canvas-ignore="true" class="modal hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div class="p-5 border-b flex items-center justify-between bg-slate-50"><div><p class="text-[10px] uppercase tracking-[.16em] font-bold text-blue-600">Butiran Kolam Servis</p><h2 id="reservoir-detail-title" class="text-xl font-black text-slate-900 mt-1">-</h2></div><button onclick="closeReservoirDetail()" class="w-9 h-9 rounded-full bg-white border hover:bg-slate-100 text-slate-500" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></div>
+            <div id="reservoir-detail-content" class="p-5 md:p-6 overflow-y-auto"></div>
+        </div>
+    </div>
 
     <!-- MODAL KEMASKINI FIZIKAL -->
     <div id="modal-update" data-html2canvas-ignore="true" class="modal hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4">
@@ -309,16 +403,22 @@
         </div>
     </div>
 
+    </div><!-- /app-shell -->
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const API_URL = "https://sains-pd-api.apiz1335.workers.dev";
         const KML_BASE_URL = "https://raw.githubusercontent.com/apiz1335-cmd/kml-water-supply-data-6/main/";
+        const IS_LOCAL_PREVIEW = ['localhost', '127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('preview') === '1';
         let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
         let currentRowFizikal = null;
         let currentDataVersion = "0";
         let isLiveMode = false;
+        let activeModule = 'recovery';
+        let reservoirRows = []; let filteredReservoirRows = []; let reservoirDataLoaded = false; let reservoirLoading = false;
+        let demandMap = null; let demandMarkerLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
         
         let userLevel = "guest";
 
@@ -328,12 +428,12 @@
         const FILTER_EXPIRY_MS = 8 * 60 * 60 * 1000;
 
         function escapeHtml(str) {
-            if (!str) return '';
+            if (str === null || str === undefined) return '';
             return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            if (!sessionStorage.getItem('pd_water_auth_token')) { window.location.replace('index.html'); return; }
+            if (!sessionStorage.getItem('pd_water_auth_token') && !IS_LOCAL_PREVIEW) { window.location.replace('index.html'); return; }
             
             // --- FUNGSI MAX SESSION 8 JAM ---
             let sessionStart = sessionStorage.getItem('pd_water_session_start');
@@ -353,7 +453,8 @@
             }, 60000); // Semak setiap 1 minit di background
             // --------------------------------
             
-            userLevel = (sessionStorage.getItem('pd_water_user_level') || 'guest').toLowerCase();
+            userLevel = (IS_LOCAL_PREVIEW ? 'admin' : (sessionStorage.getItem('pd_water_user_level') || 'guest')).toLowerCase();
+            document.getElementById('sidebar-user-level').innerText = userLevel === 'admin' ? 'Pentadbir' : 'Pengguna';
             if (userLevel === 'admin') {
                 document.getElementById('nav-admin-recovery').classList.remove('hidden');
                 document.getElementById('nav-admin-whatsapp').classList.remove('hidden'); 
@@ -365,7 +466,7 @@
         });
 
         window.addEventListener('pageshow', function(event) {
-            if (event.persisted || !sessionStorage.getItem('pd_water_auth_token')) { window.location.replace('index.html'); }
+            if (!IS_LOCAL_PREVIEW && (event.persisted || !sessionStorage.getItem('pd_water_auth_token'))) { window.location.replace('index.html'); }
         });
 
         function updateLiveBadge(isLive) {
@@ -377,11 +478,11 @@
 
         async function downloadView(format) {
             window.scrollTo(0, 0); const el = document.body; const printHeader = document.getElementById('print-header');
-            document.getElementById('print-tab-title').innerText = "LAPORAN: " + (document.getElementById(`nav-${activeTabName}`).innerText.replace(/[\[\]]/g, ''));
+            document.getElementById('print-tab-title').innerText = activeModule === 'demand' ? 'LAPORAN: DEMAND BEKALAN AIR PORT DICKSON' : "LAPORAN: " + (document.getElementById(`nav-${activeTabName}`).innerText.replace(/[\[\]]/g, ''));
             printHeader.classList.remove('hidden');
             try {
                 const canvas = await html2canvas(el, { useCORS: true, scale: 1.5, backgroundColor: '#f8fafc' });
-                printHeader.classList.add('hidden'); const cleanTabName = activeTabName.toUpperCase();
+                printHeader.classList.add('hidden'); const cleanTabName = activeModule === 'demand' ? 'DEMAND_BEKALAN_AIR' : activeTabName.toUpperCase();
                 if (format === 'png') {
                     const link = document.createElement('a'); link.download = `Dashboard_${cleanTabName}.png`; link.href = canvas.toDataURL('image/png'); link.click();
                 } else if (format === 'pdf') {
@@ -420,6 +521,32 @@
         
         function showLoading(show) { document.getElementById('loading-screen').style.display = show ? 'flex' : 'none'; }
 
+        function toggleSidebar(show) {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.toggle('-translate-x-full', !show);
+            backdrop.classList.toggle('hidden', !show);
+            document.body.classList.toggle('sidebar-open', show);
+        }
+
+        function switchModule(moduleName) {
+            activeModule = moduleName;
+            const isDemand = moduleName === 'demand';
+            document.getElementById('module-recovery-btn').classList.toggle('active-module', !isDemand);
+            document.getElementById('module-demand-btn').classList.toggle('active-module', isDemand);
+            document.getElementById('recovery-subnav').classList.toggle('hidden', isDemand);
+            document.getElementById('tab-demand').classList.toggle('hidden', !isDemand);
+            document.getElementById('module-subtitle').innerText = isDemand ? 'Demand Bekalan Air Port Dickson' : 'Sistem Pemantauan Pemulihan Bekalan Air';
+            if (isDemand) {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                if (!reservoirDataLoaded && !reservoirLoading) fetchReservoirData();
+                setTimeout(() => { if (demandMap) demandMap.invalidateSize(); }, 200);
+            } else {
+                switchTab(activeTabName, true);
+            }
+            if (window.innerWidth < 768) toggleSidebar(false);
+        }
+
         async function fetchData(isInitial) {
             if (isInitial) showLoading(true);
             try {
@@ -444,17 +571,21 @@
                             else if (val.includes("SEREMBAN") || val.includes("NGOI")) activeTabName = 'seremban';
                         }
                     }
-                    switchTab(activeTabName, true);
-                    if (activeTabName === 'fisik' && !isInitial) renderPhysicalWork();
-                    if (activeTabName === 'admin-recovery' && !isInitial) { populateAdminFilters('refresh'); }
-                    if (activeTabName === 'admin-whatsapp' && !isInitial) { populateWaFilters(); }
+                    const embeddedReservoirData = res.reservoirData || res.dataKolam || res.kolamDetails;
+                    if (embeddedReservoirData) ingestReservoirPayload(embeddedReservoirData, res.reservoirHeaders || res.kolamHeaders);
+                    if (activeModule === 'recovery') {
+                        switchTab(activeTabName, true);
+                        if (activeTabName === 'fisik' && !isInitial) renderPhysicalWork();
+                        if (activeTabName === 'admin-recovery' && !isInitial) { populateAdminFilters('refresh'); }
+                        if (activeTabName === 'admin-whatsapp' && !isInitial) { populateWaFilters(); }
+                    }
                 }
             } catch (err) {} finally { if (isInitial) showLoading(false); }
         }
 
         async function manualRefresh() {
             const btn = document.getElementById('refresh-btn'); btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i><span>MENGEKEMASKINI...</span>`;
-            await fetchData(false);
+            if (activeModule === 'demand') await fetchReservoirData(true); else await fetchData(false);
             btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span class="hidden sm:inline">REFRESH</span>`;
             showToast("Data Dikemaskini!");
         }
@@ -475,6 +606,211 @@
             else if (tabKey === 'admin-whatsapp') { populateWaFilters(); }
             else { renderLraDashboard(tabKey); setTimeout(() => { if (map) map.invalidateSize(); }, 200); }
         }
+
+        // ==========================================
+        //  MODUL DEMAND BEKALAN AIR / KOLAM DETAILS
+        // ==========================================
+        const KOLAM_FALLBACK_HEADERS = [
+            'RESERVOIR NAME','SUPPLY FROM','SECONDARY SUPPLY','DEMAND PER MONTH (M3)','DEMAND PER DAY (M3)','TOTAL CONNECTION','TAGGING NO PAAB','CONSTRUCTION DATE','CAPACITY (MG)','SERVICE RESERVOIR CAPACITY (ML)','TWL','BWL','LAT','LONG','MUKIM/ PEKAN/ BANDAR','NO LOT/PT','NO. HAKMILIK','LUAS (HEK)','CUKAI SEMASA (RM)','TUNGGAKAN (RM)','DENDA LEWAT (RM)','AMAUN LEBIH (RM)','KADAR CUKAI (RM/ha)','SERVICE RESERVOIR STATUS','PUMP HOUSE','ST PAAB TAGGING NO','SUCTION TANK','CAPACITY (ML)','TWL ST','BWL ST','STATUS ST','GAMBAR KOLAM SERVIS'
+        ];
+
+        function normalizeHeader(value) {
+            return String(value || '').replace(/<br\s*\/?\s*>/gi, ' ').replace(/\s+/g, ' ').trim().toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+        }
+
+        function numberValue(value) {
+            const match = String(value ?? '').replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+            return match ? Number(match[0]) : 0;
+        }
+
+        function pickMapped(mapped, names, occurrence = 1) {
+            for (const name of names) {
+                const key = normalizeHeader(name);
+                const item = mapped[`${key}#${occurrence}`] ?? mapped[key];
+                if (item !== undefined && item !== null && String(item).trim() !== '') return item;
+            }
+            return '';
+        }
+
+        function makeReservoirRecord(headers, values, id) {
+            const mapped = {}; const counts = {}; const pairs = [];
+            headers.forEach((header, index) => {
+                const label = String(header || KOLAM_FALLBACK_HEADERS[index] || `COLUMN ${index + 1}`).trim();
+                const key = normalizeHeader(label); counts[key] = (counts[key] || 0) + 1;
+                const value = values[index] ?? '';
+                mapped[`${key}#${counts[key]}`] = value;
+                if (mapped[key] === undefined) mapped[key] = value;
+                if (label) pairs.push({ label, value: String(value).trim() === '' ? '-' : value });
+            });
+            const name = pickMapped(mapped, ['RESERVOIR NAME', 'NAMA KOLAM']);
+            return {
+                _id: id, name, pairs,
+                supplyFrom: pickMapped(mapped, ['SUPPLY FROM']),
+                secondarySupply: pickMapped(mapped, ['SECONDARY SUPPLY']),
+                demandMonth: numberValue(pickMapped(mapped, ['DEMAND PER MONTH (M3)', 'DEMAND PER MONTH'])),
+                demandDay: numberValue(pickMapped(mapped, ['DEMAND PER DAY (M3)', 'DEMAND PER DAY'])),
+                connections: numberValue(pickMapped(mapped, ['TOTAL CONNECTION'])),
+                tagging: pickMapped(mapped, ['TAGGING NO PAAB']),
+                constructionDate: pickMapped(mapped, ['CONSTRUCTION DATE']),
+                capacityMg: numberValue(pickMapped(mapped, ['CAPACITY (MG)'])),
+                serviceCapacityMl: numberValue(pickMapped(mapped, ['SERVICE RESERVOIR CAPACITY (ML)'])),
+                twl: pickMapped(mapped, ['TWL']), bwl: pickMapped(mapped, ['BWL']),
+                lat: numberValue(pickMapped(mapped, ['LAT', 'LATITUDE'])), long: numberValue(pickMapped(mapped, ['LONG', 'LONGITUDE', 'LON'])),
+                mukim: pickMapped(mapped, ['MUKIM/ PEKAN/ BANDAR', 'MUKIM PEKAN BANDAR']),
+                lot: pickMapped(mapped, ['NO LOT/PT', 'NO LOT PT']), titleNo: pickMapped(mapped, ['NO. HAKMILIK', 'NO HAKMILIK']), area: pickMapped(mapped, ['LUAS (HEK)']),
+                currentTax: pickMapped(mapped, ['CUKAI SEMASA (RM)', 'CUKAI SEMASA RM']), arrears: pickMapped(mapped, ['TUNGGAKAN (RM)']), latePenalty: pickMapped(mapped, ['DENDA LEWAT (RM)']), excessAmount: pickMapped(mapped, ['AMAUN LEBIH (RM)']), taxRate: pickMapped(mapped, ['KADAR CUKAI (RM/ha)', 'KADAR CUKAI RM HA']),
+                serviceStatus: pickMapped(mapped, ['SERVICE RESERVOIR STATUS']), pumpHouse: pickMapped(mapped, ['PUMP HOUSE']), stTagging: pickMapped(mapped, ['ST PAAB TAGGING NO']), suctionTank: pickMapped(mapped, ['SUCTION TANK']),
+                suctionCapacityMl: numberValue(pickMapped(mapped, ['CAPACITY (ML)'], 1)),
+                twlSt: pickMapped(mapped, ['TWL ST']) || pickMapped(mapped, ['TWL'], 2), bwlSt: pickMapped(mapped, ['BWL ST']) || pickMapped(mapped, ['BWL'], 2), statusSt: pickMapped(mapped, ['STATUS ST']),
+                image: pickMapped(mapped, ['GAMBAR KOLAM SERVIS', 'IMAGE', 'GAMBAR'])
+            };
+        }
+
+        function ingestReservoirPayload(payload, explicitHeaders) {
+            let rows = Array.isArray(payload) ? payload : (payload?.values || payload?.data || payload?.rows || []);
+            let headers = Array.isArray(explicitHeaders) ? explicitHeaders : (payload?.headers || []);
+            if (!Array.isArray(rows)) rows = [];
+            if (rows.length && !Array.isArray(rows[0]) && typeof rows[0] === 'object') {
+                headers = headers.length ? headers : Object.keys(rows[0]);
+                rows = rows.map(item => headers.map(h => item[h] ?? ''));
+            }
+            if (!headers.length && rows.length) {
+                const headerIndex = rows.findIndex((row, index) => index < 8 && Array.isArray(row) && row.some(cell => normalizeHeader(cell) === 'RESERVOIR NAME'));
+                if (headerIndex >= 0) { headers = rows[headerIndex]; rows = rows.slice(headerIndex + 1); }
+                else headers = KOLAM_FALLBACK_HEADERS.slice(0, Math.max(KOLAM_FALLBACK_HEADERS.length, rows[0]?.length || 0));
+            }
+            reservoirRows = rows.map((row, index) => makeReservoirRecord(headers, row, index)).filter(r => String(r.name || '').trim());
+            reservoirDataLoaded = true;
+            populateDemandFilters(); applyDemandFilters();
+            updateDemandStatus(`${reservoirRows.length.toLocaleString()} rekod dimuatkan`, 'success');
+        }
+
+        async function fetchReservoirData(forceRefresh = false) {
+            if (reservoirLoading) return;
+            reservoirLoading = true; updateDemandStatus('Memuatkan KOLAM DETAILS...', 'loading');
+            document.getElementById('demand-error').classList.add('hidden');
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'getReservoirData', sheetName: 'KOLAM DETAILS', forceRefresh }) });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error || 'Data KOLAM DETAILS tidak tersedia.');
+                ingestReservoirPayload(result.data || result.values || result.rows || result, result.headers);
+            } catch (error) {
+                updateDemandStatus('Data belum tersedia', 'error');
+                const box = document.getElementById('demand-error');
+                box.innerHTML = `<div class="flex gap-3"><i class="fa-solid fa-triangle-exclamation mt-0.5"></i><div><b>Data KOLAM DETAILS tidak dapat dimuatkan.</b><p class="mt-1 text-xs">${escapeHtml(error.message || 'Sila cuba semula atau hubungi pentadbir sistem.')}</p></div></div>`;
+                box.classList.remove('hidden');
+                if (!reservoirDataLoaded) { reservoirRows = []; applyDemandFilters(); }
+            } finally { reservoirLoading = false; }
+        }
+
+        function updateDemandStatus(text, type) {
+            const el = document.getElementById('demand-data-status'); if (!el) return;
+            const color = type === 'success' ? 'bg-emerald-400' : (type === 'error' ? 'bg-rose-400' : 'bg-amber-400 animate-pulse');
+            el.innerHTML = `<span class="w-2 h-2 rounded-full ${color}"></span><span>${escapeHtml(text)}</span>`;
+        }
+
+        function populateDemandFilters() {
+            const supply = document.getElementById('demand-supply-filter'), status = document.getElementById('demand-status-filter');
+            const currentSupply = supply.value, currentStatus = status.value;
+            const supplies = [...new Set(reservoirRows.map(r => String(r.supplyFrom || '').trim()).filter(Boolean))].sort();
+            const statuses = [...new Set(reservoirRows.map(r => String(r.serviceStatus || r.statusSt || '').trim()).filter(Boolean))].sort();
+            supply.innerHTML = '<option value="ALL">Semua Supply From</option>' + supplies.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            status.innerHTML = '<option value="ALL">Semua Status</option>' + statuses.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            if (supplies.includes(currentSupply)) supply.value = currentSupply;
+            if (statuses.includes(currentStatus)) status.value = currentStatus;
+        }
+
+        function reservoirStatusKind(record) {
+            const value = String(record.serviceStatus || record.statusSt || '').trim().toUpperCase();
+            if (!value) return 'unknown';
+            if (/TIDAK|ROSAK|TUTUP|NON.?ACTIVE|INACTIVE|ABANDON/.test(value)) return 'inactive';
+            if (/AKTIF|ACTIVE|OPERASI|BAIK|BERFUNGSI|SIAP/.test(value)) return 'active';
+            return 'unknown';
+        }
+
+        function applyDemandFilters() {
+            const search = String(document.getElementById('demand-search')?.value || '').toLowerCase().trim();
+            const supply = document.getElementById('demand-supply-filter')?.value || 'ALL';
+            const status = document.getElementById('demand-status-filter')?.value || 'ALL';
+            filteredReservoirRows = reservoirRows.filter(r => {
+                const haystack = [r.name,r.supplyFrom,r.secondarySupply,r.tagging,r.mukim,r.lot,r.titleNo].join(' ').toLowerCase();
+                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status);
+            });
+            renderDemandKpis(); renderDemandTable(); renderDemandCharts(); renderDemandMap();
+        }
+
+        function formatMetric(value, maximumFractionDigits = 2) { return Number(value || 0).toLocaleString('en-MY', { maximumFractionDigits }); }
+
+        function renderDemandKpis() {
+            const total = (key) => filteredReservoirRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
+            document.getElementById('d-kpi-count').innerText = filteredReservoirRows.length.toLocaleString();
+            document.getElementById('d-kpi-day').innerText = `${formatMetric(total('demandDay'))} m³`;
+            document.getElementById('d-kpi-month').innerText = `${formatMetric(total('demandMonth'))} m³`;
+            document.getElementById('d-kpi-connection').innerText = formatMetric(total('connections'), 0);
+            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(total('serviceCapacityMl'))} ML`;
+        }
+
+        function statusBadge(record) {
+            const value = record.serviceStatus || record.statusSt || 'Tiada status', kind = reservoirStatusKind(record);
+            const cls = kind === 'active' ? 'bg-emerald-100 text-emerald-700' : (kind === 'inactive' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600');
+            return `<span class="inline-flex px-2 py-1 rounded-full text-[10px] uppercase font-bold ${cls}">${escapeHtml(value)}</span>`;
+        }
+
+        function renderDemandTable() {
+            const tbody = document.getElementById('demand-table-body');
+            document.getElementById('demand-list-count').innerText = `${filteredReservoirRows.length.toLocaleString()} rekod`;
+            if (!filteredReservoirRows.length) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>'; return; }
+            tbody.innerHTML = filteredReservoirRows.map(r => `<tr class="border-b border-slate-100 hover:bg-slate-50"><td class="p-3 font-bold text-slate-800">${escapeHtml(r.name)}</td><td class="p-3 text-slate-600">${escapeHtml(r.supplyFrom || '-')}</td><td class="p-3 font-semibold">${formatMetric(r.demandDay)} m³</td><td class="p-3">${formatMetric(r.connections, 0)}</td><td class="p-3">${formatMetric(r.serviceCapacityMl)} ML</td><td class="p-3">${statusBadge(r)}</td><td class="p-3 text-center"><button onclick="openReservoirDetail(${r._id})" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold">LIHAT</button></td></tr>`).join('');
+        }
+
+        function renderDemandCharts() {
+            const top = [...filteredReservoirRows].sort((a,b) => b.demandDay - a.demandDay).slice(0, 10);
+            const supplyCounts = {}; filteredReservoirRows.forEach(r => { const key = r.supplyFrom || 'Tidak Dinyatakan'; supplyCounts[key] = (supplyCounts[key] || 0) + 1; });
+            const topData = { labels: top.map(r => r.name), datasets: [{ label: 'm³ / hari', data: top.map(r => r.demandDay), backgroundColor: '#0284c7', borderRadius: 5 }] };
+            if (chartDemandTopInst) { chartDemandTopInst.data = topData; chartDemandTopInst.update(); }
+            else chartDemandTopInst = new Chart(document.getElementById('chartDemandTop').getContext('2d'), { type: 'bar', data: topData, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } });
+            const labels = Object.keys(supplyCounts), colors = ['#0284c7','#06b6d4','#14b8a6','#8b5cf6','#f59e0b','#e11d48','#64748b'];
+            const supplyData = { labels, datasets: [{ data: labels.map(k => supplyCounts[k]), backgroundColor: labels.map((_,i) => colors[i % colors.length]), borderWidth: 0 }] };
+            if (chartDemandSupplyInst) { chartDemandSupplyInst.data = supplyData; chartDemandSupplyInst.update(); }
+            else chartDemandSupplyInst = new Chart(document.getElementById('chartDemandSupply').getContext('2d'), { type: 'doughnut', data: supplyData, options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
+        }
+
+        function imageUrl(value) {
+            const raw = String(value || '').trim(); if (!/^https?:\/\//i.test(raw)) return '';
+            const driveId = raw.match(/\/d\/([\w-]+)/)?.[1] || raw.match(/[?&]id=([\w-]+)/)?.[1];
+            return driveId ? `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000` : raw;
+        }
+
+        function renderDemandMap() {
+            if (!demandMap) {
+                demandMap = L.map('demand-map', { renderer: L.canvas() }).setView([2.52, 101.95], 11);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true, attribution: '&copy; OpenStreetMap' }).addTo(demandMap);
+            }
+            if (demandMarkerLayer) demandMap.removeLayer(demandMarkerLayer);
+            demandMarkerLayer = L.featureGroup().addTo(demandMap); let validCount = 0;
+            filteredReservoirRows.forEach(r => {
+                if (!Number.isFinite(r.lat) || !Number.isFinite(r.long) || Math.abs(r.lat) > 90 || Math.abs(r.long) > 180 || (!r.lat && !r.long)) return;
+                validCount++; const kind = reservoirStatusKind(r);
+                const icon = L.divIcon({ className: 'tank-marker-wrap', html: `<div class="tank-marker ${kind}"><i class="fa-solid fa-water-ladder"></i></div>`, iconSize: [34,34], iconAnchor: [17,17], popupAnchor: [0,-16] });
+                const rowsHtml = r.pairs.map(item => `<div class="grid grid-cols-[115px_1fr] gap-2 py-1.5 border-b border-slate-100"><b class="text-[9px] uppercase text-slate-500">${escapeHtml(item.label)}</b><span class="text-[11px] text-slate-800 break-words">${escapeHtml(item.value)}</span></div>`).join('');
+                const img = imageUrl(r.image);
+                const popup = `<div><div class="flex items-start gap-2 mb-2"><span class="w-8 h-8 rounded-lg bg-sky-600 text-white grid place-items-center shrink-0"><i class="fa-solid fa-water-ladder"></i></span><div><h4 class="font-black text-slate-900 leading-tight">${escapeHtml(r.name)}</h4><p class="text-[10px] text-slate-500 mt-1">${escapeHtml(r.mukim || r.supplyFrom || 'Port Dickson')}</p></div></div>${img ? `<img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(r.name)}" class="w-full h-28 object-cover rounded-lg mb-2" onerror="this.style.display='none'">` : ''}<div class="max-h-56 overflow-y-auto pr-1">${rowsHtml}</div><button onclick="openReservoirDetail(${r._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT PAPARAN PENUH</button></div>`;
+                L.marker([r.lat, r.long], { icon }).addTo(demandMarkerLayer).bindPopup(popup, { className: 'reservoir-popup', maxWidth: 380 });
+            });
+            document.getElementById('demand-map-count').innerText = `${validCount.toLocaleString()} lokasi dipaparkan`;
+            if (validCount && demandMarkerLayer.getBounds().isValid()) demandMap.fitBounds(demandMarkerLayer.getBounds(), { padding: [35,35], maxZoom: 15 });
+        }
+
+        function openReservoirDetail(id) {
+            const record = reservoirRows.find(r => r._id === id); if (!record) return;
+            document.getElementById('reservoir-detail-title').innerText = record.name;
+            const img = imageUrl(record.image);
+            const details = record.pairs.map(item => `<div class="rounded-lg border border-slate-200 bg-white p-3"><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>`).join('');
+            document.getElementById('reservoir-detail-content').innerHTML = `<div class="grid grid-cols-1 ${img ? 'lg:grid-cols-[280px_1fr]' : ''} gap-6">${img ? `<div><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></div>` : ''}<dl class="detail-grid grid grid-cols-1 sm:grid-cols-2 gap-3">${details}</dl></div>`;
+            document.getElementById('reservoir-detail-modal').classList.remove('hidden');
+        }
+
+        function closeReservoirDetail() { document.getElementById('reservoir-detail-modal').classList.add('hidden'); }
 
         // ==========================================
         //  FUNGSI ADMIN LAPORAN WHATSAPP
