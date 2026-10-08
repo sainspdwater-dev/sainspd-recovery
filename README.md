@@ -11,6 +11,8 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 - Kawalan lapisan peta berasingan untuk polygon kolam dan Secondary Supply; polygon kolam aktif secara lalai
 - Paparan penuh kolam dibahagikan kepada Maklumat Am (hijau), Kolam Servis (biru) dan Suction Tank (merah)
 - Pentadbir boleh menyunting butiran kolam, menyimpan ke Google Sheet dan menggantikan polygon melalui fail `.kml`
+- Status seperti `ACTIVE` dan `Active` digabungkan sebagai satu pilihan `Active`
+- Medan formula `DEMAND PER DAY (M3)` dikunci daripada suntingan, dan data suction tank menggunakan header `CAPACITY ST (ML)`
 
 ## Uji di VS Code
 

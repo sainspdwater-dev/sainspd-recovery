@@ -4,7 +4,7 @@ import path from 'node:path';
 const html = await readFile('index_dashboard.html', 'utf8');
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(value => value.trim());
 for (const source of scripts) new Function(source);
-for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveReservoirDetails', 'handleReservoirKmlUpload', 'openSidebarFromEdge']) {
+for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveReservoirDetails', 'handleReservoirKmlUpload', 'openSidebarFromEdge', 'canonicalStatusValue', 'isReservoirFormulaHeader', 'reservoir-detail-footer']) {
   if (!html.includes(required)) throw new Error(`Missing requested dashboard feature: ${required}`);
 }
 const workerSource = await readFile('cloudflare-worker-kolam-snippet.js', 'utf8');
@@ -23,6 +23,7 @@ const prototypeContext = { window: {} };
 new Function('window', prototypeDataSource)(prototypeContext.window);
 const prototypeData = prototypeContext.window.PROTOTYPE_SHEET_DATA;
 if (prototypeData?.kolam?.rows?.length !== 74) throw new Error(`Expected 74 KOLAM DETAILS rows, found ${prototypeData?.kolam?.rows?.length || 0}`);
+if (!prototypeData?.kolam?.headers?.includes('CAPACITY ST (ML)')) throw new Error('Expected updated CAPACITY ST (ML) header');
 if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 548 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
 
 async function countKml(directory) {

@@ -47,6 +47,7 @@
         .sheet-grid td.sheet-editable { cursor: text; outline: none; }
         .sheet-grid td.sheet-editable:hover { background: #eff6ff !important; box-shadow: inset 0 0 0 1px #93c5fd; }
         .sheet-grid td.sheet-editable:focus { background: #dbeafe !important; box-shadow: inset 0 0 0 2px #2563eb; }
+        .sheet-grid td.sheet-formula-locked { background: #f1f5f9 !important; color: #64748b; cursor: not-allowed; }
         .sheet-grid td.sheet-dirty::after { content: ''; float: right; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; margin: 4px 0 0 6px; }
         .sheet-filter-input { width: 100%; min-width: 120px; border: 1px solid #b6c9bf; border-radius: 5px; padding: 5px 6px; color: #0f172a; background: white; font-size: 10px; outline: none; }
         .sheet-filter-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
@@ -449,6 +450,7 @@
         <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
             <div class="p-5 border-b flex items-center justify-between bg-slate-50"><div><p class="text-[10px] uppercase tracking-[.16em] font-bold text-blue-600">Butiran Kolam Servis</p><h2 id="reservoir-detail-title" class="text-xl font-black text-slate-900 mt-1">-</h2></div><button onclick="closeReservoirDetail()" class="w-9 h-9 rounded-full bg-white border hover:bg-slate-100 text-slate-500" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></div>
             <div id="reservoir-detail-content" class="p-5 md:p-6 overflow-y-auto"></div>
+            <div id="reservoir-detail-footer" class="hidden shrink-0 border-t bg-white/95 backdrop-blur p-4 flex-wrap justify-end gap-2"></div>
         </div>
     </div>
 
@@ -747,11 +749,21 @@
         //  MODUL DEMAND BEKALAN AIR / KOLAM DETAILS
         // ==========================================
         const KOLAM_FALLBACK_HEADERS = [
-            'RESERVOIR NAME','SUPPLY FROM','SECONDARY SUPPLY','DEMAND PER MONTH (M3)','DEMAND PER DAY (M3)','TOTAL CONNECTION','TAGGING NO PAAB','CONSTRUCTION DATE','CAPACITY (MG)','SERVICE RESERVOIR CAPACITY (ML)','TWL','BWL','LAT','LONG','MUKIM/ PEKAN/ BANDAR','NO LOT/PT','NO. HAKMILIK','LUAS (HEK)','CUKAI SEMASA (RM)','TUNGGAKAN (RM)','DENDA LEWAT (RM)','AMAUN LEBIH (RM)','KADAR CUKAI (RM/ha)','SERVICE RESERVOIR STATUS','PUMP HOUSE','ST PAAB TAGGING NO','SUCTION TANK','CAPACITY (ML)','TWL ST','BWL ST','STATUS ST','GAMBAR KOLAM SERVIS'
+            'RESERVOIR NAME','SUPPLY FROM','SECONDARY SUPPLY','DEMAND PER MONTH (M3)','DEMAND PER DAY (M3)','TOTAL CONNECTION','TAGGING NO PAAB','CONSTRUCTION DATE','CAPACITY (MG)','SERVICE RESERVOIR CAPACITY (ML)','TWL','BWL','LAT','LONG','MUKIM/ PEKAN/ BANDAR','NO LOT/PT','NO. HAKMILIK','LUAS (HEK)','CUKAI SEMASA (RM)','TUNGGAKAN (RM)','DENDA LEWAT (RM)','AMAUN LEBIH (RM)','KADAR CUKAI (RM/ha)','SERVICE RESERVOIR STATUS','PUMP HOUSE','ST PAAB TAGGING NO','SUCTION TANK','CAPACITY ST (ML)','TWL ST','BWL ST','STATUS ST','GAMBAR KOLAM SERVIS'
         ];
 
         function normalizeHeader(value) {
             return String(value || '').replace(/<br\s*\/?\s*>/gi, ' ').replace(/\s+/g, ' ').trim().toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+        }
+
+        function isReservoirFormulaHeader(value) { return normalizeHeader(value) === 'DEMAND PER DAY M3'; }
+
+        function canonicalStatusValue(value) { return String(value || '').trim().toUpperCase(); }
+
+        function statusDisplayLabel(value) {
+            const key = canonicalStatusValue(value);
+            const labels = { ACTIVE: 'Active', INACTIVE: 'Inactive', ABANDONED: 'Abandoned', DEMOLISHED: 'Demolished' };
+            return labels[key] || String(value || '').trim();
         }
 
         function canonicalReservoirName(value) {
@@ -827,7 +839,7 @@
                 lot: pickMapped(mapped, ['NO LOT/PT', 'NO LOT PT']), titleNo: pickMapped(mapped, ['NO. HAKMILIK', 'NO HAKMILIK']), area: pickMapped(mapped, ['LUAS (HEK)']),
                 currentTax: pickMapped(mapped, ['CUKAI SEMASA (RM)', 'CUKAI SEMASA RM']), arrears: pickMapped(mapped, ['TUNGGAKAN (RM)']), latePenalty: pickMapped(mapped, ['DENDA LEWAT (RM)']), excessAmount: pickMapped(mapped, ['AMAUN LEBIH (RM)']), taxRate: pickMapped(mapped, ['KADAR CUKAI (RM/ha)', 'KADAR CUKAI RM HA']),
                 serviceStatus: pickMapped(mapped, ['SERVICE RESERVOIR STATUS']), pumpHouse: pickMapped(mapped, ['PUMP HOUSE']), stTagging: pickMapped(mapped, ['ST PAAB TAGGING NO']), suctionTank: pickMapped(mapped, ['SUCTION TANK']),
-                suctionCapacityMl: numberValue(pickMapped(mapped, ['CAPACITY (ML)'], 1)),
+                suctionCapacityMl: numberValue(pickMapped(mapped, ['CAPACITY ST (ML)', 'CAPACITY (ML)'], 1)),
                 twlSt: pickMapped(mapped, ['TWL ST']) || pickMapped(mapped, ['TWL'], 2), bwlSt: pickMapped(mapped, ['BWL ST']) || pickMapped(mapped, ['BWL'], 2), statusSt: pickMapped(mapped, ['STATUS ST']),
                 image: pickMapped(mapped, ['GAMBAR KOLAM SERVIS', 'IMAGE', 'GAMBAR'])
             };
@@ -961,11 +973,16 @@
                 return !query || String(item.row[colIndex] ?? '').toLowerCase().includes(query);
             }));
             const editable = userLevel === 'admin';
-            const headerHtml = state.headers.map((header, index) => `<th class="sheet-col-${index}">${escapeHtml(header || `COLUMN ${index + 1}`)}</th>`).join('');
+            const headerHtml = state.headers.map((header, index) => {
+                const locked = key === 'kolam' && isReservoirFormulaHeader(header);
+                return `<th class="sheet-col-${index}">${escapeHtml(header || `COLUMN ${index + 1}`)}${locked ? ' <i class="fa-solid fa-lock text-amber-300 ml-1" title="Formula Google Sheet dikunci"></i>' : ''}</th>`;
+            }).join('');
             const filterHtml = state.headers.map((_, index) => `<th class="sheet-col-${index}"><input class="sheet-filter-input" value="${escapeHtml(filters[index] || '')}" onchange="updateSheetFilter('${key}', ${index}, this.value)" placeholder="Filter..."></th>`).join('');
             const bodyHtml = visibleRows.length ? visibleRows.map(item => `<tr>${state.headers.map((_, colIndex) => {
                 const dirty = Object.prototype.hasOwnProperty.call(sheetEdits[key], `${item.rowIndex}:${colIndex}`);
-                return `<td class="sheet-col-${colIndex} ${editable ? 'sheet-editable' : ''} ${dirty ? 'sheet-dirty' : ''}" ${editable ? 'contenteditable="true" spellcheck="false"' : ''} title="${escapeHtml(item.row[colIndex] ?? '')}" onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)">${escapeHtml(item.row[colIndex] ?? '')}</td>`;
+                const formulaLocked = key === 'kolam' && isReservoirFormulaHeader(state.headers[colIndex]);
+                const cellEditable = editable && !formulaLocked;
+                return `<td class="sheet-col-${colIndex} ${cellEditable ? 'sheet-editable' : ''} ${formulaLocked ? 'sheet-formula-locked' : ''} ${dirty ? 'sheet-dirty' : ''}" ${cellEditable ? 'contenteditable="true" spellcheck="false"' : ''} title="${formulaLocked ? 'Formula Google Sheet dikunci' : escapeHtml(item.row[colIndex] ?? '')}" ${cellEditable ? `onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)"` : ''}>${escapeHtml(item.row[colIndex] ?? '')}${formulaLocked ? ' <i class="fa-solid fa-lock text-[9px] text-slate-400 ml-1"></i>' : ''}</td>`;
             }).join('')}</tr>`).join('') : `<tr><td colspan="${Math.max(1, state.headers.length)}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
             table.innerHTML = `<thead><tr>${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
             document.getElementById(`${key}-sheet-count`).innerText = `${visibleRows.length.toLocaleString()} / ${state.rows.length.toLocaleString()} rekod`;
@@ -976,7 +993,8 @@
 
         function editSheetCell(key, rowIndex, columnIndex, cell) {
             if (userLevel !== 'admin') return;
-            const state = sheetState(key), value = cell.innerText.trim();
+            const state = sheetState(key); if (key === 'kolam' && isReservoirFormulaHeader(state.headers[columnIndex])) return;
+            const value = cell.innerText.trim();
             if (String(state.rows[rowIndex]?.[columnIndex] ?? '') === value) return;
             state.rows[rowIndex][columnIndex] = value; sheetEdits[key][`${rowIndex}:${columnIndex}`] = value;
             cell.classList.add('sheet-dirty'); persistLocalSheetDraft(key); updateSheetSaveStatus(key);
@@ -1010,8 +1028,13 @@
             try {
                 const draft = JSON.parse(localStorage.getItem(`pd-water-prototype-v3-${key}`) || 'null');
                 if (!draft?.headers?.length || !Array.isArray(draft.rows)) return;
-                if (key === 'kolam') { reservoirHeaders = draft.headers; reservoirRawRows = draft.rows; reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim()); }
-                else { masterlistHeaders = draft.headers; masterlistRawRows = draft.rows; }
+                if (key === 'kolam') {
+                    reservoirHeaders = reservoirHeaders.length === draft.headers.length ? reservoirHeaders : draft.headers;
+                    reservoirRawRows = draft.rows; reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
+                } else {
+                    masterlistHeaders = masterlistHeaders.length === draft.headers.length ? masterlistHeaders : draft.headers;
+                    masterlistRawRows = draft.rows;
+                }
             } catch (_) {}
         }
 
@@ -1077,13 +1100,13 @@
 
         function populateDemandFilters() {
             const supply = document.getElementById('demand-supply-filter'), secondary = document.getElementById('demand-secondary-filter'), status = document.getElementById('demand-status-filter');
-            const currentSupply = supply.value, currentSecondary = secondary.value, currentStatus = status.value;
+            const currentSupply = supply.value, currentSecondary = secondary.value, currentStatus = canonicalStatusValue(status.value);
             const supplies = [...new Set(reservoirRows.map(r => String(r.supplyFrom || '').trim()).filter(Boolean))].sort();
             const secondaries = [...new Set(reservoirRows.filter(r => currentSupply === 'ALL' || r.supplyFrom === currentSupply).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
-            const statuses = [...new Set(reservoirRows.map(r => String(r.serviceStatus || r.statusSt || '').trim()).filter(Boolean))].sort();
+            const statuses = [...new Set(reservoirRows.map(r => canonicalStatusValue(r.serviceStatus || r.statusSt)).filter(Boolean))].sort();
             supply.innerHTML = '<option value="ALL">Semua Supply From</option>' + supplies.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
             secondary.innerHTML = '<option value="ALL">Semua Secondary Supply</option>' + secondaries.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-            status.innerHTML = '<option value="ALL">Semua Status</option>' + statuses.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            status.innerHTML = '<option value="ALL">Semua Status</option>' + statuses.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(statusDisplayLabel(v))}</option>`).join('');
             if (supplies.includes(currentSupply)) supply.value = currentSupply;
             if (secondaries.includes(currentSecondary)) secondary.value = currentSecondary;
             if (statuses.includes(currentStatus)) status.value = currentStatus;
@@ -1130,7 +1153,7 @@
             const names = [...new Set(reservoirRows.filter(r =>
                 (supply === 'ALL' || r.supplyFrom === supply) &&
                 (secondary === 'ALL' || r.secondarySupply === secondary) &&
-                (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status)
+                (status === 'ALL' || canonicalStatusValue(r.serviceStatus || r.statusSt) === canonicalStatusValue(status))
             ).map(r => String(r.name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ms'));
             select.innerHTML = '<option value="ALL">Semua Kolam</option>' + names.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
             if (names.includes(current)) select.value = current;
@@ -1144,7 +1167,7 @@
             const reservoir = document.getElementById('demand-reservoir-filter')?.value || 'ALL';
             filteredReservoirRows = reservoirRows.filter(r => {
                 const haystack = [r.name,r.supplyFrom,r.secondarySupply,r.tagging,r.mukim,r.lot,r.titleNo].join(' ').toLowerCase();
-                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status) && (reservoir === 'ALL' || String(r.name || '').trim() === reservoir);
+                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || canonicalStatusValue(r.serviceStatus || r.statusSt) === canonicalStatusValue(status)) && (reservoir === 'ALL' || String(r.name || '').trim() === reservoir);
             });
             renderDemandKpis(); renderDemandTable(); renderDemandCharts(); renderDemandMap();
         }
@@ -1161,7 +1184,7 @@
         }
 
         function statusBadge(record) {
-            const value = record.serviceStatus || record.statusSt || 'Tiada status', kind = reservoirStatusKind(record);
+            const value = statusDisplayLabel(record.serviceStatus || record.statusSt) || 'Tiada status', kind = reservoirStatusKind(record);
             const cls = kind === 'active' ? 'bg-emerald-100 text-emerald-700' : (kind === 'inactive' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600');
             return `<span class="inline-flex px-2 py-1 rounded-full text-[10px] uppercase font-bold ${cls}">${escapeHtml(value)}</span>`;
         }
@@ -1306,7 +1329,7 @@
 
         function reservoirDetailGroup(label, index) {
             const key = normalizeHeader(label);
-            if (/^(PUMP HOUSE|ST PAAB TAGGING NO|SUCTION TANK|CAPACITY ML|TWL ST|BWL ST|STATUS ST)$/.test(key)) return 'suction';
+            if (/^(PUMP HOUSE|ST PAAB TAGGING NO|SUCTION TANK|CAPACITY ST ML|CAPACITY ML|TWL ST|BWL ST|STATUS ST)$/.test(key)) return 'suction';
             if (/^(TAGGING NO PAAB|CAPACITY MG|SERVICE RESERVOIR CAPACITY ML|TWL|BWL|SERVICE RESERVOIR STATUS)$/.test(key)) return 'service';
             return 'general';
         }
@@ -1317,7 +1340,10 @@
                 blue: 'border-blue-200 bg-blue-50/75 text-blue-800',
                 red: 'border-rose-200 bg-rose-50/75 text-rose-800'
             };
-            const fields = items.map(item => `<label class="detail-field block rounded-xl border border-white/80 bg-white/65 p-3"><span class="block text-[10px] uppercase tracking-wide font-bold opacity-70">${escapeHtml(item.label)}</span><input data-reservoir-column="${item.index}" value="${escapeHtml(item.value)}" ${editable ? '' : 'readonly'}></label>`).join('');
+            const fields = items.map(item => {
+                const formulaLocked = isReservoirFormulaHeader(item.label), canEdit = editable && !formulaLocked;
+                return `<label class="detail-field block rounded-xl border border-white/80 bg-white/65 p-3"><span class="block text-[10px] uppercase tracking-wide font-bold opacity-70">${escapeHtml(item.label)}${formulaLocked ? ' <i class="fa-solid fa-lock ml-1" title="Formula Google Sheet dikunci"></i>' : ''}</span><input data-reservoir-column="${item.index}" value="${escapeHtml(item.value)}" ${canEdit ? '' : 'readonly'} ${formulaLocked ? 'title="Nilai formula Google Sheet dikunci"' : ''}></label>`;
+            }).join('');
             return `<section class="rounded-2xl border p-4 ${tones[colour]}"><div class="flex items-center gap-2 mb-3"><span class="w-8 h-8 rounded-lg bg-white/80 grid place-items-center"><i class="fa-solid ${icon}"></i></span><div><h3 class="font-black">${title}</h3><p class="text-[10px] opacity-70">${editable ? 'Boleh diedit oleh pentadbir' : 'Paparan sahaja'}</p></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3">${fields || '<p class="text-xs opacity-70">Tiada maklumat.</p>'}</div></section>`;
         }
 
@@ -1329,8 +1355,13 @@
             record.headers.forEach((label, index) => groups[reservoirDetailGroup(label, index)].push({ label, index, value: record.values[index] ?? '' }));
             const override = reservoirKmlOverrides[canonicalReservoirName(record.name)];
             const uploadPanel = `<section class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="font-black text-slate-800"><i class="fa-solid fa-draw-polygon text-violet-600 mr-2"></i>KML Polygon Kolam</h3><p id="reservoir-kml-status" class="text-xs text-slate-500 mt-1">${override ? `Menggunakan fail baharu: ${escapeHtml(override.fileName || 'KML tersimpan')}` : 'Menggunakan fail KML asal dalam sistem.'}</p></div>${editable ? `<label class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold cursor-pointer"><i class="fa-solid fa-cloud-arrow-up"></i> MUAT NAIK KML<input type="file" accept=".kml,application/vnd.google-earth.kml+xml" class="hidden" onchange="handleReservoirKmlUpload(event, ${record._id})"></label>` : '<span class="text-[10px] font-bold rounded-full bg-slate-200 text-slate-600 px-3 py-1.5">ADMIN SAHAJA</span>'}</div><p class="text-[10px] text-slate-400 mt-3">Fail KML baharu akan menggantikan polygon kolam ini pada peta selepas disahkan.</p></section>`;
-            document.getElementById('reservoir-detail-content').innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">${img ? `<aside><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></aside>` : '<aside class="hidden lg:block"></aside>'}<div class="space-y-4">${renderReservoirDetailSection('Maklumat Am', 'fa-circle-info', 'green', groups.general, editable)}${renderReservoirDetailSection('Kolam Servis', 'fa-water', 'blue', groups.service, editable)}${renderReservoirDetailSection('Suction Tank', 'fa-pump-soap', 'red', groups.suction, editable)}${uploadPanel}${editable ? `<div class="sticky bottom-0 bg-white/95 backdrop-blur border border-slate-200 rounded-xl p-3 flex flex-wrap justify-end gap-2 shadow-lg"><button onclick="closeReservoirDetail()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="reservoir-detail-save" onclick="saveReservoirDetails(${record._id})" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>SIMPAN KE DATABASE</button></div>` : ''}</div></div>`;
+            const content = document.getElementById('reservoir-detail-content');
+            content.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">${img ? `<aside><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></aside>` : '<aside class="hidden lg:block"></aside>'}<div class="space-y-4">${renderReservoirDetailSection('Maklumat Am', 'fa-circle-info', 'green', groups.general, editable)}${renderReservoirDetailSection('Kolam Servis', 'fa-water', 'blue', groups.service, editable)}${renderReservoirDetailSection('Suction Tank', 'fa-pump-soap', 'red', groups.suction, editable)}${uploadPanel}</div></div>`;
+            const footer = document.getElementById('reservoir-detail-footer');
+            footer.innerHTML = editable ? `<button onclick="closeReservoirDetail()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="reservoir-detail-save" onclick="saveReservoirDetails(${record._id})" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>SIMPAN KE DATABASE</button>` : '<span class="text-xs text-slate-500">Paparan sahaja</span>';
+            footer.classList.remove('hidden'); footer.classList.add('flex');
             document.getElementById('reservoir-detail-modal').classList.remove('hidden');
+            content.scrollTop = 0; requestAnimationFrame(() => content.scrollTo({ top: 0, behavior: 'auto' }));
         }
 
         async function saveReservoirDetails(id) {
@@ -1372,7 +1403,10 @@
             finally { event.target.value = ''; }
         }
 
-        function closeReservoirDetail() { document.getElementById('reservoir-detail-modal').classList.add('hidden'); }
+        function closeReservoirDetail() {
+            document.getElementById('reservoir-detail-modal').classList.add('hidden');
+            const footer = document.getElementById('reservoir-detail-footer'); footer.classList.add('hidden'); footer.classList.remove('flex');
+        }
 
         // ==========================================
         //  FUNGSI ADMIN LAPORAN WHATSAPP
