@@ -26,6 +26,8 @@
         .sidebar-link.active-module { background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; box-shadow: 0 10px 24px rgba(37, 99, 235, .28); }
         .tank-marker-wrap { background: transparent; border: 0; }
         .tank-marker { width: 34px; height: 34px; display: grid; place-items: center; border: 3px solid white; border-radius: 11px; color: white; background: #0284c7; box-shadow: 0 5px 16px rgba(15, 23, 42, .35); font-size: 15px; }
+        .tank-marker svg { width: 23px; height: 23px; display: block; }
+        .tank-popup-icon svg { width: 22px; height: 22px; display: block; }
         .tank-marker.inactive { background: #e11d48; }
         .tank-marker.unknown { background: #64748b; }
         .reservoir-popup .leaflet-popup-content { margin: 14px; min-width: 260px; }
@@ -49,6 +51,11 @@
         .sheet-filter-input { width: 100%; min-width: 120px; border: 1px solid #b6c9bf; border-radius: 5px; padding: 5px 6px; color: #0f172a; background: white; font-size: 10px; outline: none; }
         .sheet-filter-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
         .demand-view-tab.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, .22); }
+        @media (min-width: 768px) {
+            #app-sidebar, #app-shell { transition: transform .3s ease, padding-left .3s ease; }
+            body.sidebar-desktop-collapsed #app-sidebar { transform: translateX(-100%) !important; }
+            body.sidebar-desktop-collapsed #app-shell { padding-left: 0 !important; }
+        }
         @media (max-width: 767px) {
             #demand-map { height: 460px; }
             body.sidebar-open { overflow: hidden; }
@@ -79,7 +86,7 @@
             <div class="flex items-center gap-3 px-2 py-4 border-b border-slate-800">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 grid place-items-center shadow-lg shadow-blue-950/50"><i class="fa-solid fa-droplet text-xl"></i></div>
                 <div><p class="text-[10px] tracking-[.18em] uppercase text-slate-400">Port Dickson</p><h2 class="text-sm font-black leading-tight">SISTEM BEKALAN AIR</h2></div>
-                <button onclick="toggleSidebar(false)" class="ml-auto md:hidden text-slate-400 hover:text-white p-2" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="toggleSidebar(false)" class="ml-auto text-slate-400 hover:text-white p-2" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="pt-6 px-2"><p class="text-[10px] tracking-[.16em] uppercase text-slate-500 font-bold mb-3">Modul Utama</p></div>
             <nav class="space-y-2">
@@ -104,7 +111,7 @@
     <header class="bg-slate-900 text-white shadow-md" data-html2canvas-ignore="true">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center">
             <div class="mb-3 lg:mb-0 text-center lg:text-left flex items-center gap-3">
-                <button onclick="toggleSidebar(true)" class="md:hidden w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700" aria-label="Buka menu"><i class="fa-solid fa-bars"></i></button>
+                <button onclick="toggleSidebar()" class="w-10 h-10 shrink-0 rounded-lg bg-slate-800 hover:bg-slate-700" aria-label="Buka atau tutup menu"><i class="fa-solid fa-bars"></i></button>
                 <div><h1 class="text-2xl font-bold tracking-tight">SISTEM BEKALAN AIR PORT DICKSON</h1><p id="module-subtitle" class="text-xs text-slate-400 mt-0.5">Sistem Pemantauan Pemulihan Bekalan Air</p></div>
             </div>
             
@@ -464,11 +471,13 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="assets/kml-kolam-manifest.js"></script>
+    <script src="assets/prototype-sheet-data.js"></script>
     <script>
         const API_URL = "https://sains-pd-api.apiz1335.workers.dev";
         const KML_BASE_URL = "https://raw.githubusercontent.com/apiz1335-cmd/kml-water-supply-data-6/main/";
         const IS_LOCAL_PREVIEW = ['localhost', '127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('preview') === '1';
         const LOCAL_PREVIEW_LEVEL = new URLSearchParams(location.search).get('level') === 'guest' ? 'guest' : 'admin';
+        const TANK_ICON_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 10h38v15c0 7-5 12-12 12H25c-7 0-12-5-12-12V10Z" fill="currentColor"/><path d="M16 22c5-4 9 4 14 0s9 4 14 0 8 2 8 2" fill="none" stroke="#bae6fd" stroke-width="3" stroke-linecap="round"/><path d="M23 36 17 56M41 36l6 20M14 56h36M24 45h16" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
@@ -519,6 +528,7 @@
             // --------------------------------
             
             userLevel = (IS_LOCAL_PREVIEW ? LOCAL_PREVIEW_LEVEL : (sessionStorage.getItem('pd_water_user_level') || 'guest')).toLowerCase();
+            if (window.innerWidth >= 768 && localStorage.getItem('pd-water-sidebar-collapsed') === '1') document.body.classList.add('sidebar-desktop-collapsed');
             document.getElementById('sidebar-user-level').innerText = userLevel === 'admin' ? 'Pentadbir' : 'Pengguna';
             if (userLevel === 'admin') {
                 document.getElementById('nav-admin-recovery').classList.remove('hidden');
@@ -596,6 +606,15 @@
         function toggleSidebar(show) {
             const sidebar = document.getElementById('app-sidebar');
             const backdrop = document.getElementById('sidebar-backdrop');
+            if (window.innerWidth >= 768) {
+                const isCollapsed = document.body.classList.contains('sidebar-desktop-collapsed');
+                const shouldOpen = typeof show === 'boolean' ? show : isCollapsed;
+                document.body.classList.toggle('sidebar-desktop-collapsed', !shouldOpen);
+                localStorage.setItem('pd-water-sidebar-collapsed', shouldOpen ? '0' : '1');
+                setTimeout(() => { if (map) map.invalidateSize(); if (demandMap) demandMap.invalidateSize(); }, 320);
+                return;
+            }
+            if (typeof show !== 'boolean') show = sidebar.classList.contains('-translate-x-full');
             sidebar.classList.toggle('-translate-x-full', !show);
             backdrop.classList.toggle('hidden', !show);
             document.body.classList.toggle('sidebar-open', show);
@@ -805,6 +824,12 @@
         }
 
         function buildMasterlistFallback() {
+            const snapshot = window.PROTOTYPE_SHEET_DATA?.masterlist;
+            if (IS_LOCAL_PREVIEW && snapshot?.headers?.length && snapshot?.rows?.length) {
+                ingestMasterlistPayload(snapshot.rows, snapshot.headers);
+                showSheetNotice('masterlist', `${snapshot.rows.length.toLocaleString()} rekod penuh MASTERLIST · snapshot Google Sheet ${new Date(window.PROTOTYPE_SHEET_DATA.syncedAt).toLocaleString('ms-MY')}`, 'success');
+                return;
+            }
             if (masterlistDataLoaded || !globalData?.length) return;
             const rows = globalData.slice(4).filter(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim()));
             if (!rows.length) return;
@@ -817,6 +842,12 @@
 
         async function fetchMasterlistData(forceRefresh = false) {
             showSheetNotice('masterlist', 'Memuatkan MASTERLIST...', 'loading');
+            const snapshot = window.PROTOTYPE_SHEET_DATA?.masterlist;
+            if (IS_LOCAL_PREVIEW && snapshot?.headers?.length && snapshot?.rows?.length) {
+                ingestMasterlistPayload(snapshot.rows, snapshot.headers);
+                showSheetNotice('masterlist', `${snapshot.rows.length.toLocaleString()} rekod penuh MASTERLIST · snapshot Google Sheet ${new Date(window.PROTOTYPE_SHEET_DATA.syncedAt).toLocaleString('ms-MY')}`, 'success');
+                return;
+            }
             try {
                 const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'getSheetTable', sheetName: 'MASTERLIST', forceRefresh }) });
                 const result = await response.json();
@@ -897,13 +928,13 @@
         function persistLocalSheetDraft(key) {
             if (!IS_LOCAL_PREVIEW) return;
             const state = sheetState(key);
-            localStorage.setItem(`pd-water-prototype-v2-${key}`, JSON.stringify({ headers: state.headers, rows: state.rows, timestamp: Date.now() }));
+            localStorage.setItem(`pd-water-prototype-v3-${key}`, JSON.stringify({ headers: state.headers, rows: state.rows, timestamp: Date.now() }));
         }
 
         function restoreLocalSheetDraft(key) {
             if (!IS_LOCAL_PREVIEW) return;
             try {
-                const draft = JSON.parse(localStorage.getItem(`pd-water-prototype-v2-${key}`) || 'null');
+                const draft = JSON.parse(localStorage.getItem(`pd-water-prototype-v3-${key}`) || 'null');
                 if (!draft?.headers?.length || !Array.isArray(draft.rows)) return;
                 if (key === 'kolam') { reservoirHeaders = draft.headers; reservoirRawRows = draft.rows; reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim()); }
                 else { masterlistHeaders = draft.headers; masterlistRawRows = draft.rows; }
@@ -938,6 +969,14 @@
             if (reservoirLoading) return;
             reservoirLoading = true; updateDemandStatus('Memuatkan KOLAM DETAILS...', 'loading');
             document.getElementById('demand-error').classList.add('hidden');
+            const snapshot = window.PROTOTYPE_SHEET_DATA?.kolam;
+            if (IS_LOCAL_PREVIEW && snapshot?.headers?.length && snapshot?.rows?.length) {
+                ingestReservoirPayload(snapshot.rows, snapshot.headers);
+                updateDemandStatus(`${snapshot.rows.length.toLocaleString()} rekod penuh lokal`, 'success');
+                showSheetNotice('kolam', `${snapshot.rows.length.toLocaleString()} rekod penuh KOLAM DETAILS · snapshot Google Sheet ${new Date(window.PROTOTYPE_SHEET_DATA.syncedAt).toLocaleString('ms-MY')}`, 'success');
+                reservoirLoading = false;
+                return;
+            }
             try {
                 const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'getReservoirData', sheetName: 'KOLAM DETAILS', forceRefresh }) });
                 const result = await response.json();
@@ -979,9 +1018,13 @@
         function reservoirStatusKind(record) {
             const value = String(record.serviceStatus || record.statusSt || '').trim().toUpperCase();
             if (!value) return 'unknown';
-            if (/TIDAK|ROSAK|TUTUP|NON.?ACTIVE|INACTIVE|ABANDON/.test(value)) return 'inactive';
+            if (/TIDAK|ROSAK|TUTUP|NON.?ACTIVE|INACTIVE|ABANDON|DEMOLISH|ROBOH/.test(value)) return 'inactive';
             if (/AKTIF|ACTIVE|OPERASI|BAIK|BERFUNGSI|SIAP/.test(value)) return 'active';
             return 'unknown';
+        }
+
+        function hasValidReservoirCoordinates(record) {
+            return Number.isFinite(record.lat) && Number.isFinite(record.long) && Math.abs(record.lat) <= 90 && Math.abs(record.long) <= 180 && Boolean(record.lat && record.long);
         }
 
         function onDemandSupplyChange() {
@@ -1054,12 +1097,12 @@
             if (demandMarkerLayer) demandMap.removeLayer(demandMarkerLayer);
             demandMarkerLayer = L.featureGroup().addTo(demandMap); let validCount = 0;
             filteredReservoirRows.forEach(r => {
-                if (!Number.isFinite(r.lat) || !Number.isFinite(r.long) || Math.abs(r.lat) > 90 || Math.abs(r.long) > 180 || (!r.lat && !r.long)) return;
+                if (!hasValidReservoirCoordinates(r)) return;
                 validCount++; const kind = reservoirStatusKind(r);
-                const icon = L.divIcon({ className: 'tank-marker-wrap', html: `<div class="tank-marker ${kind}"><i class="fa-solid fa-water-ladder"></i></div>`, iconSize: [34,34], iconAnchor: [17,17], popupAnchor: [0,-16] });
+                const icon = L.divIcon({ className: 'tank-marker-wrap', html: `<div class="tank-marker ${kind}">${TANK_ICON_SVG}</div>`, iconSize: [34,34], iconAnchor: [17,17], popupAnchor: [0,-16] });
                 const rowsHtml = r.pairs.map(item => `<div class="grid grid-cols-[115px_1fr] gap-2 py-1.5 border-b border-slate-100"><b class="text-[9px] uppercase text-slate-500">${escapeHtml(item.label)}</b><span class="text-[11px] text-slate-800 break-words">${escapeHtml(item.value)}</span></div>`).join('');
                 const img = imageUrl(r.image);
-                const popup = `<div><div class="flex items-start gap-2 mb-2"><span class="w-8 h-8 rounded-lg bg-sky-600 text-white grid place-items-center shrink-0"><i class="fa-solid fa-water-ladder"></i></span><div><h4 class="font-black text-slate-900 leading-tight">${escapeHtml(r.name)}</h4><p class="text-[10px] text-slate-500 mt-1">${escapeHtml(r.mukim || r.supplyFrom || 'Port Dickson')}</p></div></div>${img ? `<img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(r.name)}" class="w-full h-28 object-cover rounded-lg mb-2" onerror="this.style.display='none'">` : ''}<div class="max-h-56 overflow-y-auto pr-1">${rowsHtml}</div><button onclick="openReservoirDetail(${r._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT PAPARAN PENUH</button></div>`;
+                const popup = `<div><div class="flex items-start gap-2 mb-2"><span class="tank-popup-icon w-8 h-8 rounded-lg bg-sky-600 text-white grid place-items-center shrink-0">${TANK_ICON_SVG}</span><div><h4 class="font-black text-slate-900 leading-tight">${escapeHtml(r.name)}</h4><p class="text-[10px] text-slate-500 mt-1">${escapeHtml(r.mukim || r.supplyFrom || 'Port Dickson')}</p></div></div>${img ? `<img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(r.name)}" class="w-full h-28 object-cover rounded-lg mb-2" onerror="this.style.display='none'">` : ''}<div class="max-h-56 overflow-y-auto pr-1">${rowsHtml}</div><button onclick="openReservoirDetail(${r._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT PAPARAN PENUH</button></div>`;
                 L.marker([r.lat, r.long], { icon }).addTo(demandMarkerLayer).bindPopup(popup, { className: 'reservoir-popup', maxWidth: 380 });
             });
             document.getElementById('demand-map-count').innerText = `${validCount.toLocaleString()} lokasi dipaparkan`;
@@ -1103,7 +1146,7 @@
             const markerBounds = demandMarkerLayer?.getBounds?.(); const kmlBounds = demandKmlLayer.getBounds();
             if ((!markerBounds || !markerBounds.isValid()) && kmlBounds.isValid()) demandMap.fitBounds(kmlBounds, { padding: [30,30], maxZoom: 13 });
             const markerText = document.getElementById('demand-map-count');
-            if (markerText) markerText.innerText = `${filteredReservoirRows.filter(r => r.lat && r.long).length.toLocaleString()} lokasi · ${visible.length.toLocaleString()} sub KML`;
+            if (markerText) markerText.innerText = `${filteredReservoirRows.filter(hasValidReservoirCoordinates).length.toLocaleString()} lokasi · ${visible.length.toLocaleString()} sub KML`;
         }
 
         function openReservoirDetail(id) {

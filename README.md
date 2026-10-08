@@ -6,6 +6,8 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 - Demand Bekalan Air Port Dickson (dashboard, carta, direktori dan peta kolam)
 - Paparan spreadsheet `KOLAM DETAILS` dan `MASTERLIST` dengan freeze header dan dua kolum pertama
 - Lapisan 43 sub-KML kolam mengikut `SUPPLY FROM` / `SECONDARY SUPPLY`
+- Snapshot penuh Google Sheet untuk prototaip lokal: 74 rekod `KOLAM DETAILS` dan 548 rekod `MASTERLIST`
+- Sidebar responsif yang boleh dibuka atau ditutup pada desktop dan telefon
 
 ## Uji di VS Code
 
@@ -31,10 +33,19 @@ atau butang simpan. Jalankan task **Check Water Supply Prototype**, atau
 `node scripts/check.mjs`, untuk menyemak sintaks dan manifest KML sebelum sebarang
 deployment.
 
-Jika Worker produksi belum mempunyai action baharu, mod lokal menggunakan tujuh
-rekod contoh KOLAM DETAILS daripada paparan rujukan untuk menguji dashboard,
-peta, penapis dan edit. MASTERLIST pula menggunakan data recovery semasa sebagai
-fallback sehingga endpoint MASTERLIST tersedia.
+Mod lokal menggunakan snapshot penuh Google Sheet di
+`assets/prototype-sheet-data.js`. Untuk menyegerakkan semula kedua-dua tab selepas
+data Google Sheet berubah, jalankan:
+
+```powershell
+node scripts/sync-sheet-data.mjs
+```
+
+Arahan yang sama tersedia melalui `Terminal > Run Task > Sync Full Google Sheet Data`.
+
+Arahan ini mengemas kini kesemua 74 rekod `KOLAM DETAILS` dan 548 rekod
+`MASTERLIST` berdasarkan kandungan semasa Google Sheet. Worker masih digunakan
+untuk data produksi selepas deployment.
 
 ## Sambungan `KOLAM DETAILS`
 

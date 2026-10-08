@@ -16,6 +16,14 @@
       "command": "node",
       "args": ["scripts/check.mjs"],
       "problemMatcher": []
+    },
+    {
+      "label": "Sync Full Google Sheet Data",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/sync-sheet-data.mjs"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
     }
   ]
 }

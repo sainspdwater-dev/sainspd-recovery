@@ -6,6 +6,13 @@ const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
 for (const source of scripts) new Function(source);
 const manifestSource = await readFile('assets/kml-kolam-manifest.js', 'utf8');
 new Function(manifestSource);
+const prototypeDataSource = await readFile('assets/prototype-sheet-data.js', 'utf8');
+new Function(prototypeDataSource);
+const prototypeContext = { window: {} };
+new Function('window', prototypeDataSource)(prototypeContext.window);
+const prototypeData = prototypeContext.window.PROTOTYPE_SHEET_DATA;
+if (prototypeData?.kolam?.rows?.length !== 74) throw new Error(`Expected 74 KOLAM DETAILS rows, found ${prototypeData?.kolam?.rows?.length || 0}`);
+if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 548 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
 
 async function countKml(directory) {
   let count = 0;
@@ -16,5 +23,4 @@ async function countKml(directory) {
 const fileCount = await countKml('assets/kml-kolam');
 const manifestCount = (manifestSource.match(/path:\s*'/g) || []).length;
 if (fileCount !== manifestCount) throw new Error(`KML manifest mismatch: ${fileCount} files, ${manifestCount} manifest entries`);
-console.log(`Checks passed: ${scripts.length} inline script, ${fileCount} KML files.`);
-
+console.log(`Checks passed: ${scripts.length} inline script, ${fileCount} KML files, ${prototypeData.kolam.rows.length} KOLAM DETAILS rows, ${prototypeData.masterlist.rows.length} MASTERLIST rows.`);
