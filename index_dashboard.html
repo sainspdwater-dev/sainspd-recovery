@@ -362,11 +362,12 @@
                 <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200 col-span-2 lg:col-span-1"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Kapasiti Kolam</p><h3 id="d-kpi-capacity" class="text-xl font-black mt-1 text-emerald-700">0 ML</h3></div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-5 gap-3" data-html2canvas-ignore="true">
-                <label class="md:col-span-2 relative"><span class="sr-only">Cari kolam</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i><input id="demand-search" oninput="applyDemandFilters()" type="search" placeholder="Cari nama kolam, tagging, mukim..." class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3" data-html2canvas-ignore="true">
+                <label class="xl:col-span-2 relative"><span class="sr-only">Cari kolam</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i><input id="demand-search" oninput="applyDemandFilters()" type="search" placeholder="Cari nama kolam, tagging, mukim..." class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
                 <select id="demand-supply-filter" onchange="onDemandSupplyChange()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Supply From</option></select>
-                <select id="demand-secondary-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Secondary Supply</option></select>
-                <select id="demand-status-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Status</option></select>
+                <select id="demand-secondary-filter" onchange="onDemandSecondaryChange()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Secondary Supply</option></select>
+                <select id="demand-status-filter" onchange="onDemandStatusChange()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Status</option></select>
+                <select id="demand-reservoir-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Kolam</option></select>
             </div>
 
             <div id="demand-error" class="hidden rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"></div>
@@ -377,8 +378,8 @@
                     <div id="demand-map"></div>
                 </div>
                 <div class="xl:col-span-2 space-y-6">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Demand Harian Tertinggi</h3><div class="relative h-64"><canvas id="chartDemandTop"></canvas></div></div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700 mb-4">Bilangan Kolam Mengikut Supply</h3><div class="relative h-60"><canvas id="chartDemandSupply"></canvas></div></div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700">Demand Harian Tertinggi</h3><p class="text-[11px] text-slate-400 mt-1 mb-4">Kolam aktif sahaja</p><div class="relative h-64"><canvas id="chartDemandTop"></canvas></div></div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200"><h3 class="text-sm font-bold text-slate-700">Bilangan Kolam Aktif Mengikut Supply</h3><p class="text-[11px] text-slate-400 mt-1 mb-4">Status tidak aktif kekal dipaparkan pada peta</p><div class="relative h-60"><canvas id="chartDemandSupply"></canvas></div></div>
                 </div>
             </div>
 
@@ -1013,6 +1014,7 @@
             if (supplies.includes(currentSupply)) supply.value = currentSupply;
             if (secondaries.includes(currentSecondary)) secondary.value = currentSecondary;
             if (statuses.includes(currentStatus)) status.value = currentStatus;
+            populateDemandReservoirOptions(true);
         }
 
         function reservoirStatusKind(record) {
@@ -1032,7 +1034,33 @@
             const secondary = document.getElementById('demand-secondary-filter');
             const values = [...new Set(reservoirRows.filter(r => selectedSupply === 'ALL' || r.supplyFrom === selectedSupply).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
             secondary.innerHTML = '<option value="ALL">Semua Secondary Supply</option>' + values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            populateDemandReservoirOptions(false);
             applyDemandFilters();
+        }
+
+        function onDemandSecondaryChange() {
+            populateDemandReservoirOptions(false);
+            applyDemandFilters();
+        }
+
+        function onDemandStatusChange() {
+            populateDemandReservoirOptions(false);
+            applyDemandFilters();
+        }
+
+        function populateDemandReservoirOptions(preserveSelection = true) {
+            const select = document.getElementById('demand-reservoir-filter'); if (!select) return;
+            const current = preserveSelection ? select.value : 'ALL';
+            const supply = document.getElementById('demand-supply-filter')?.value || 'ALL';
+            const secondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
+            const status = document.getElementById('demand-status-filter')?.value || 'ALL';
+            const names = [...new Set(reservoirRows.filter(r =>
+                (supply === 'ALL' || r.supplyFrom === supply) &&
+                (secondary === 'ALL' || r.secondarySupply === secondary) &&
+                (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status)
+            ).map(r => String(r.name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ms'));
+            select.innerHTML = '<option value="ALL">Semua Kolam</option>' + names.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+            if (names.includes(current)) select.value = current;
         }
 
         function applyDemandFilters() {
@@ -1040,9 +1068,10 @@
             const supply = document.getElementById('demand-supply-filter')?.value || 'ALL';
             const secondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
             const status = document.getElementById('demand-status-filter')?.value || 'ALL';
+            const reservoir = document.getElementById('demand-reservoir-filter')?.value || 'ALL';
             filteredReservoirRows = reservoirRows.filter(r => {
                 const haystack = [r.name,r.supplyFrom,r.secondarySupply,r.tagging,r.mukim,r.lot,r.titleNo].join(' ').toLowerCase();
-                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status);
+                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status) && (reservoir === 'ALL' || String(r.name || '').trim() === reservoir);
             });
             renderDemandKpis(); renderDemandTable(); renderDemandCharts(); renderDemandMap();
         }
@@ -1072,8 +1101,9 @@
         }
 
         function renderDemandCharts() {
-            const top = [...filteredReservoirRows].sort((a,b) => b.demandDay - a.demandDay).slice(0, 10);
-            const supplyCounts = {}; filteredReservoirRows.forEach(r => { const key = r.supplyFrom || 'Tidak Dinyatakan'; supplyCounts[key] = (supplyCounts[key] || 0) + 1; });
+            const activeRows = filteredReservoirRows.filter(record => reservoirStatusKind(record) === 'active');
+            const top = [...activeRows].sort((a,b) => b.demandDay - a.demandDay).slice(0, 10);
+            const supplyCounts = {}; activeRows.forEach(r => { const key = r.supplyFrom || 'Tidak Dinyatakan'; supplyCounts[key] = (supplyCounts[key] || 0) + 1; });
             const topData = { labels: top.map(r => r.name), datasets: [{ label: 'm³ / hari', data: top.map(r => r.demandDay), backgroundColor: '#0284c7', borderRadius: 5 }] };
             if (chartDemandTopInst) { chartDemandTopInst.data = topData; chartDemandTopInst.update(); }
             else chartDemandTopInst = new Chart(document.getElementById('chartDemandTop').getContext('2d'), { type: 'bar', data: topData, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } });
@@ -1115,30 +1145,36 @@
             if (demandKmlLayer) demandMap.removeLayer(demandKmlLayer);
             demandKmlLayer = L.featureGroup().addTo(demandMap);
             const manifest = window.KML_KOLAM_MANIFEST || [];
-            const selectedSupply = document.getElementById('demand-supply-filter')?.value || 'ALL';
-            const selectedSecondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
-            const normalizeName = value => normalizeHeader(value).replace(/\bSUPPLY\b/g, '').trim();
-            const supplyKey = normalizeName(selectedSupply), secondaryKey = normalizeName(selectedSecondary);
-            const visible = manifest.filter(item => {
-                const itemSupply = normalizeName(item.supply), itemName = normalizeName(item.name);
-                const supplyMatch = selectedSupply === 'ALL' || supplyKey.includes(itemSupply) || itemSupply.includes(supplyKey);
-                const secondaryMatch = selectedSecondary === 'ALL' || secondaryKey.includes(itemName) || itemName.includes(secondaryKey);
-                return supplyMatch && secondaryMatch;
-            });
-            const colours = { 'BUKIT KUNYIT': '#f59e0b', 'BUKIT TUNGGAL': '#8b5cf6', 'LOJI LINGGI': '#0284c7' };
+            const canonicalName = value => normalizeHeader(value)
+                .replace(/\bTMN\b/g, 'TAMAN')
+                .replace(/\bBKT\b/g, 'BUKIT')
+                .replace(/\bKG\b/g, 'KAMPUNG')
+                .replace(/\bTELUK\b/g, 'TELOK')
+                .trim();
+            const namesMatch = (left, right) => {
+                const a = canonicalName(left), b = canonicalName(right);
+                return a === b || (Math.min(a.length, b.length) >= 8 && (a.includes(b) || b.includes(a)));
+            };
+            const visible = manifest.filter(item => filteredReservoirRows.some(record => namesMatch(item.name, record.name)));
+            const distinctNameKeys = [...new Set(manifest.map(item => canonicalName(item.name)))].sort();
+            const colourForName = name => {
+                const index = Math.max(0, distinctNameKeys.indexOf(canonicalName(name)));
+                return `hsl(${Math.round((index * 137.508) % 360)} 76% 42%)`;
+            };
             await Promise.all(visible.map(async item => {
                 try {
                     let text = kmlTextCache.get(item.path);
                     if (!text) { const response = await fetch(encodeURI(item.path)); if (!response.ok) throw new Error(); text = await response.text(); kmlTextCache.set(item.path, text); }
                     const xml = new DOMParser().parseFromString(text, 'text/xml');
-                    const colour = colours[normalizeHeader(item.supply)] || '#0f766e';
+                    const colour = colourForName(item.name);
+                    const linkedRecord = filteredReservoirRows.find(record => namesMatch(item.name, record.name));
                     for (const node of xml.getElementsByTagName('coordinates')) {
                         const points = node.textContent.trim().split(/\s+/).map(part => { const values = part.split(',').map(Number); return values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1]) ? [values[1], values[0]] : null; }).filter(Boolean);
                         if (points.length < 2) continue;
                         const isPolygon = points.length >= 3 && points[0][0] === points[points.length - 1][0] && points[0][1] === points[points.length - 1][1];
-                        const layer = isPolygon ? L.polygon(points, { color: colour, weight: 2, fillColor: colour, fillOpacity: .12 }) : L.polyline(points, { color: colour, weight: 3, opacity: .75 });
-                        layer.bindTooltip(`${item.name} · ${item.supply}`, { sticky: true });
-                        layer.bindPopup(`<div class="p-1"><p class="text-[10px] uppercase font-bold text-slate-500">Sub KML Kolam</p><h4 class="font-black text-slate-900 mt-1">${escapeHtml(item.name)}</h4><p class="text-xs text-slate-600 mt-1"><b>Supply From:</b> ${escapeHtml(item.supply)}</p></div>`);
+                        const layer = isPolygon ? L.polygon(points, { color: colour, weight: 3, fillColor: colour, fillOpacity: .18 }) : L.polyline(points, { color: colour, weight: 4, opacity: .82 });
+                        layer.bindTooltip(`${item.name}${linkedRecord?.supplyFrom ? ` · ${linkedRecord.supplyFrom}` : ''}`, { sticky: true });
+                        layer.bindPopup(`<div class="p-1"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:${colour}"></span><p class="text-[10px] uppercase font-bold text-slate-500">KML Kolam</p></div><h4 class="font-black text-slate-900 mt-2">${escapeHtml(item.name)}</h4>${linkedRecord ? `<p class="text-xs text-slate-600 mt-1"><b>Supply From:</b> ${escapeHtml(linkedRecord.supplyFrom || '-')}</p><p class="text-xs text-slate-600"><b>Secondary Supply:</b> ${escapeHtml(linkedRecord.secondarySupply || '-')}</p><button onclick="openReservoirDetail(${linkedRecord._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT BUTIRAN KOLAM</button>` : `<p class="text-xs text-slate-600 mt-1"><b>Folder KML:</b> ${escapeHtml(item.supply)}</p>`}</div>`);
                         layer.addTo(demandKmlLayer);
                     }
                 } catch (_) {}
