@@ -3,16 +3,18 @@
   "tasks": [
     {
       "label": "Run Water Supply Prototype",
-      "type": "shell",
-      "command": "npm run dev",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/dev-server.mjs"],
       "isBackground": true,
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
       "label": "Check Water Supply Prototype",
-      "type": "shell",
-      "command": "npm run check",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/check.mjs"],
       "problemMatcher": []
     }
   ]

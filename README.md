@@ -10,7 +10,16 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 ## Uji di VS Code
 
 1. Buka folder projek ini dalam VS Code.
-2. Jalankan task **Run Water Supply Prototype** (`Terminal > Run Task`) atau jalankan `npm run dev`.
+2. Jalankan task **Run Water Supply Prototype** (`Terminal > Run Task`). Task ini
+   menggunakan `node` secara terus dan tidak bergantung pada polisi skrip PowerShell.
+   Sebagai alternatif, jalankan salah satu arahan berikut dalam terminal Windows:
+
+   ```powershell
+   node scripts/dev-server.mjs
+   # atau
+   npm.cmd run dev
+   ```
+
 3. Buka salah satu URL yang dicetak dalam terminal:
 
    - Admin: `http://127.0.0.1:4173/index_dashboard.html?preview=1`
@@ -18,8 +27,9 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 
 Dalam mod admin lokal, perubahan sel disimpan pada browser menggunakan
 `localStorage`. Mod guest tidak mempunyai `contenteditable`, butang tambah baris
-atau butang simpan. Jalankan `npm run check` untuk menyemak sintaks dan manifest
-KML sebelum sebarang deployment.
+atau butang simpan. Jalankan task **Check Water Supply Prototype**, atau
+`node scripts/check.mjs`, untuk menyemak sintaks dan manifest KML sebelum sebarang
+deployment.
 
 Jika Worker produksi belum mempunyai action baharu, mod lokal menggunakan tujuh
 rekod contoh KOLAM DETAILS daripada paparan rujukan untuk menguji dashboard,
