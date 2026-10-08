@@ -7,7 +7,10 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 - Paparan spreadsheet `KOLAM DETAILS` dan `MASTERLIST` dengan freeze header dan dua kolum pertama
 - Lapisan 43 sub-KML kolam mengikut `SUPPLY FROM` / `SECONDARY SUPPLY`
 - Snapshot penuh Google Sheet untuk prototaip lokal: 74 rekod `KOLAM DETAILS` dan 548 rekod `MASTERLIST`
-- Sidebar responsif yang boleh dibuka atau ditutup pada desktop dan telefon
+- Sidebar auto-responsif: halakan tetikus ke tepi kiri untuk membukanya pada desktop, atau gunakan butang menu pada telefon
+- Kawalan lapisan peta berasingan untuk polygon kolam dan Secondary Supply; polygon kolam aktif secara lalai
+- Paparan penuh kolam dibahagikan kepada Maklumat Am (hijau), Kolam Servis (biru) dan Suction Tank (merah)
+- Pentadbir boleh menyunting butiran kolam, menyimpan ke Google Sheet dan menggantikan polygon melalui fail `.kml`
 
 ## Uji di VS Code
 
@@ -69,6 +72,12 @@ Paparan spreadsheet turut menggunakan:
 Suntingan admin dihantar secara batch melalui action `updateSheetCells`. Action
 ini mesti diletakkan di belakang semakan token admin Worker sedia ada. Akaun
 servis Google juga perlu mempunyai akses Editor kepada fail Sheet.
+
+Muat naik polygon kolam menggunakan action `saveReservoirKml`, manakala
+`getReservoirKmlOverrides` memuatkan semula KML yang telah diganti. Kedua-duanya
+menggunakan binding KV `GAS_CACHE` sedia ada. Action simpan KML mesti diletakkan
+di belakang semakan token admin yang sama. Dalam preview lokal, perubahan data
+dan KML disimpan dalam `localStorage` supaya fungsi boleh diuji sebelum deployment.
 
 ```json
 {

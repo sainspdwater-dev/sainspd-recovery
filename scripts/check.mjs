@@ -4,6 +4,14 @@ import path from 'node:path';
 const html = await readFile('index_dashboard.html', 'utf8');
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(value => value.trim());
 for (const source of scripts) new Function(source);
+for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveReservoirDetails', 'handleReservoirKmlUpload', 'openSidebarFromEdge']) {
+  if (!html.includes(required)) throw new Error(`Missing requested dashboard feature: ${required}`);
+}
+const workerSource = await readFile('cloudflare-worker-kolam-snippet.js', 'utf8');
+new Function(workerSource);
+for (const required of ['saveReservoirKml', 'getReservoirKmlOverrides', 'updateSheetCells']) {
+  if (!workerSource.includes(required)) throw new Error(`Missing Worker persistence function: ${required}`);
+}
 const manifestSource = await readFile('assets/kml-kolam-manifest.js', 'utf8');
 new Function(manifestSource);
 const manifestContext = { window: {} };

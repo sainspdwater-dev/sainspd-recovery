@@ -9,6 +9,11 @@
  *      case 'updateSheetCells':
  *        // IMPORTANT: run the existing admin-token check before this line.
  *        return jsonResponse(await updateSheetCells(body, env));
+ *      case 'getReservoirKmlOverrides':
+ *        return jsonResponse(await getReservoirKmlOverrides(env));
+ *      case 'saveReservoirKml':
+ *        // IMPORTANT: run the existing admin-token check before this line.
+ *        return jsonResponse(await saveReservoirKml(body, env));
  *
  * 2. Copy the functions below into the same Worker source.
  * 3. Keep the existing GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, SHEET_ID and
@@ -99,6 +104,32 @@ async function updateSheetCells(body, env) {
     ]);
   }
   return { success: true, updatedCells: data.length };
+}
+
+async function saveReservoirKml(body, env) {
+  if (!env.GAS_CACHE) throw new Error('Binding GAS_CACHE diperlukan untuk simpanan KML.');
+  const reservoirName = String(body?.reservoirName || '').trim();
+  const fileName = String(body?.fileName || '').trim();
+  const kmlText = String(body?.kmlText || '');
+  if (!reservoirName || !fileName.toLowerCase().endsWith('.kml')) throw new Error('Nama kolam atau fail KML tidak sah.');
+  if (!kmlText || kmlText.length > 8 * 1024 * 1024 || !/<coordinates[\s>]/i.test(kmlText)) throw new Error('Kandungan KML tidak sah atau melebihi 8 MB.');
+  const id = normalizeKolamHeader(reservoirName).replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  const storageKey = `reservoir-kml:${id}`;
+  const entry = { name: reservoirName, supply: String(body?.supplyFrom || ''), fileName, text: kmlText, updatedAt: new Date().toISOString() };
+  await env.GAS_CACHE.put(storageKey, JSON.stringify(entry));
+  const indexKey = 'reservoir-kml:index:v1';
+  const current = await env.GAS_CACHE.get(indexKey, { type: 'json' });
+  const keys = Array.isArray(current) ? current.filter(key => key !== storageKey) : [];
+  keys.push(storageKey);
+  await env.GAS_CACHE.put(indexKey, JSON.stringify(keys.slice(-100)));
+  return { success: true, name: reservoirName, fileName, updatedAt: entry.updatedAt };
+}
+
+async function getReservoirKmlOverrides(env) {
+  if (!env.GAS_CACHE) return { success: true, items: [] };
+  const keys = await env.GAS_CACHE.get('reservoir-kml:index:v1', { type: 'json' });
+  const items = await Promise.all((Array.isArray(keys) ? keys : []).map(key => env.GAS_CACHE.get(key, { type: 'json' })));
+  return { success: true, items: items.filter(item => item?.name && item?.text) };
 }
 
 function columnToLetter(column) {

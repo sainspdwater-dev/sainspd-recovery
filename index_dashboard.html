@@ -51,10 +51,22 @@
         .sheet-filter-input { width: 100%; min-width: 120px; border: 1px solid #b6c9bf; border-radius: 5px; padding: 5px 6px; color: #0f172a; background: white; font-size: 10px; outline: none; }
         .sheet-filter-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
         .demand-view-tab.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, .22); }
+        .map-layer-toggle input { accent-color: #2563eb; width: 1rem; height: 1rem; }
+        .detail-field input { width: 100%; margin-top: .3rem; padding: .55rem .65rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: rgba(255,255,255,.88); color: #0f172a; font-size: .8rem; font-weight: 600; outline: none; }
+        .detail-field input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+        .detail-field input:read-only { border-color: transparent; background: transparent; padding-left: 0; padding-right: 0; }
+        #sidebar-hover-rail { display: none; }
         @media (min-width: 768px) {
             #app-sidebar, #app-shell { transition: transform .3s ease, padding-left .3s ease; }
-            body.sidebar-desktop-collapsed #app-sidebar { transform: translateX(-100%) !important; }
-            body.sidebar-desktop-collapsed #app-shell { padding-left: 0 !important; }
+            body.sidebar-desktop-auto #app-shell { padding-left: 0 !important; }
+            body.sidebar-desktop-auto #app-sidebar { transform: translateX(calc(-100% + 12px)) !important; }
+            body.sidebar-desktop-auto.sidebar-desktop-open #app-sidebar,
+            body.sidebar-desktop-auto.sidebar-desktop-pinned #app-sidebar,
+            body.sidebar-desktop-auto #app-sidebar:hover { transform: translateX(0) !important; }
+            body.sidebar-desktop-auto.sidebar-desktop-pinned #app-shell { padding-left: 18rem !important; }
+            #sidebar-hover-rail { display: block; }
+            body.sidebar-desktop-open #sidebar-hover-rail,
+            body.sidebar-desktop-pinned #sidebar-hover-rail { pointer-events: none; opacity: 0; }
         }
         @media (max-width: 767px) {
             #demand-map { height: 460px; }
@@ -81,7 +93,8 @@
     </div>
 
     <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-[55] bg-slate-950/60 backdrop-blur-sm md:hidden" data-html2canvas-ignore="true"></div>
-    <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 -translate-x-full md:translate-x-0 bg-slate-950 text-white border-r border-slate-800 shadow-2xl transition-transform duration-300" data-html2canvas-ignore="true">
+    <div id="sidebar-hover-rail" onmouseenter="openSidebarFromEdge()" class="fixed inset-y-0 left-0 z-[59] w-5 bg-gradient-to-r from-blue-600/45 to-transparent cursor-e-resize transition-opacity" aria-label="Halakan tetikus untuk membuka menu" data-html2canvas-ignore="true"></div>
+    <aside id="app-sidebar" onmouseenter="keepSidebarOpen()" onmouseleave="scheduleSidebarClose()" class="fixed inset-y-0 left-0 z-[60] w-72 -translate-x-full md:translate-x-0 bg-slate-950 text-white border-r border-slate-800 shadow-2xl transition-transform duration-300" data-html2canvas-ignore="true">
         <div class="h-full flex flex-col p-4">
             <div class="flex items-center gap-3 px-2 py-4 border-b border-slate-800">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 grid place-items-center shadow-lg shadow-blue-950/50"><i class="fa-solid fa-droplet text-xl"></i></div>
@@ -374,7 +387,16 @@
 
             <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
                 <div class="xl:col-span-3 bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h3 class="font-bold text-slate-800"><i class="fa-solid fa-map-location-dot text-blue-600 mr-2"></i>Lokasi Kolam Servis</h3><p id="demand-map-count" class="text-xs text-slate-500 mt-1">0 lokasi dipaparkan</p></div><div class="flex gap-3 text-[11px] font-semibold"><span><i class="fa-solid fa-square text-sky-600 mr-1"></i>Aktif</span><span><i class="fa-solid fa-square text-rose-600 mr-1"></i>Tidak Aktif</span><span><i class="fa-solid fa-square text-slate-500 mr-1"></i>Tiada Status</span></div></div>
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                        <div><h3 class="font-bold text-slate-800"><i class="fa-solid fa-map-location-dot text-blue-600 mr-2"></i>Lokasi Kolam Servis</h3><p id="demand-map-count" class="text-xs text-slate-500 mt-1">0 lokasi dipaparkan</p></div>
+                        <div class="flex flex-col items-end gap-2" data-html2canvas-ignore="true">
+                            <div class="flex flex-wrap justify-end gap-2 text-[11px] font-bold">
+                                <label class="map-layer-toggle inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-blue-800 cursor-pointer"><input id="demand-layer-kolam" type="checkbox" checked onchange="toggleDemandMapLayers()"> Polygon Kolam</label>
+                                <label class="map-layer-toggle inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-violet-800 cursor-pointer"><input id="demand-layer-secondary" type="checkbox" onchange="toggleDemandMapLayers()"> Polygon Secondary Supply</label>
+                            </div>
+                            <div class="flex gap-3 text-[10px] font-semibold"><span><i class="fa-solid fa-square text-sky-600 mr-1"></i>Aktif</span><span><i class="fa-solid fa-square text-rose-600 mr-1"></i>Tidak Aktif</span><span><i class="fa-solid fa-square text-slate-500 mr-1"></i>Tiada Status</span></div>
+                        </div>
+                    </div>
                     <div id="demand-map"></div>
                 </div>
                 <div class="xl:col-span-2 space-y-6">
@@ -492,7 +514,8 @@
         let sheetFilterVisible = { kolam: true, masterlist: true };
         let sheetFilters = { kolam: {}, masterlist: {} };
         let sheetEdits = { kolam: {}, masterlist: {} };
-        let demandMap = null; let demandMarkerLayer = null; let demandKmlLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
+        let demandMap = null; let demandMarkerLayer = null; let demandKmlLayer = null; let demandSecondaryKmlLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
+        let demandLayerCounts = { kolam: 0, secondary: 0 }; let reservoirKmlOverrides = {}; let reservoirKmlOverridesLoaded = false; let sidebarCloseTimer = null;
         const kmlTextCache = new Map();
         
         let userLevel = "guest";
@@ -529,7 +552,9 @@
             // --------------------------------
             
             userLevel = (IS_LOCAL_PREVIEW ? LOCAL_PREVIEW_LEVEL : (sessionStorage.getItem('pd_water_user_level') || 'guest')).toLowerCase();
-            if (window.innerWidth >= 768 && localStorage.getItem('pd-water-sidebar-collapsed') === '1') document.body.classList.add('sidebar-desktop-collapsed');
+            document.body.classList.add('sidebar-desktop-auto');
+            if (window.innerWidth >= 768 && localStorage.getItem('pd-water-sidebar-pinned') === '1') document.body.classList.add('sidebar-desktop-pinned');
+            restoreLocalReservoirKmlOverrides();
             document.getElementById('sidebar-user-level').innerText = userLevel === 'admin' ? 'Pentadbir' : 'Pengguna';
             if (userLevel === 'admin') {
                 document.getElementById('nav-admin-recovery').classList.remove('hidden');
@@ -604,14 +629,30 @@
         
         function showLoading(show) { document.getElementById('loading-screen').style.display = show ? 'flex' : 'none'; }
 
+        function openSidebarFromEdge() {
+            if (window.innerWidth < 768) return;
+            clearTimeout(sidebarCloseTimer); document.body.classList.add('sidebar-desktop-open');
+        }
+
+        function keepSidebarOpen() {
+            if (window.innerWidth < 768) return;
+            clearTimeout(sidebarCloseTimer); document.body.classList.add('sidebar-desktop-open');
+        }
+
+        function scheduleSidebarClose() {
+            if (window.innerWidth < 768 || document.body.classList.contains('sidebar-desktop-pinned')) return;
+            clearTimeout(sidebarCloseTimer); sidebarCloseTimer = setTimeout(() => document.body.classList.remove('sidebar-desktop-open'), 220);
+        }
+
         function toggleSidebar(show) {
             const sidebar = document.getElementById('app-sidebar');
             const backdrop = document.getElementById('sidebar-backdrop');
             if (window.innerWidth >= 768) {
-                const isCollapsed = document.body.classList.contains('sidebar-desktop-collapsed');
-                const shouldOpen = typeof show === 'boolean' ? show : isCollapsed;
-                document.body.classList.toggle('sidebar-desktop-collapsed', !shouldOpen);
-                localStorage.setItem('pd-water-sidebar-collapsed', shouldOpen ? '0' : '1');
+                const isPinned = document.body.classList.contains('sidebar-desktop-pinned');
+                const shouldPin = typeof show === 'boolean' ? show : !isPinned;
+                document.body.classList.toggle('sidebar-desktop-pinned', shouldPin);
+                document.body.classList.toggle('sidebar-desktop-open', shouldPin);
+                localStorage.setItem('pd-water-sidebar-pinned', shouldPin ? '1' : '0');
                 setTimeout(() => { if (map) map.invalidateSize(); if (demandMap) demandMap.invalidateSize(); }, 320);
                 return;
             }
@@ -713,6 +754,37 @@
             return String(value || '').replace(/<br\s*\/?\s*>/gi, ' ').replace(/\s+/g, ' ').trim().toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
         }
 
+        function canonicalReservoirName(value) {
+            return normalizeHeader(value)
+                .replace(/\bTMN\b/g, 'TAMAN')
+                .replace(/\bBKT\b/g, 'BUKIT')
+                .replace(/\bKG\b/g, 'KAMPUNG')
+                .replace(/\bTELUK\b/g, 'TELOK')
+                .trim();
+        }
+
+        function reservoirNamesMatch(left, right) {
+            const a = canonicalReservoirName(left), b = canonicalReservoirName(right);
+            return a === b || (Math.min(a.length, b.length) >= 8 && (a.includes(b) || b.includes(a)));
+        }
+
+        function restoreLocalReservoirKmlOverrides() {
+            if (!IS_LOCAL_PREVIEW) return;
+            try { reservoirKmlOverrides = JSON.parse(localStorage.getItem('pd-water-reservoir-kml-overrides-v1') || '{}') || {}; reservoirKmlOverridesLoaded = true; }
+            catch (_) { reservoirKmlOverrides = {}; }
+        }
+
+        async function loadReservoirKmlOverrides() {
+            if (IS_LOCAL_PREVIEW || reservoirKmlOverridesLoaded) return;
+            reservoirKmlOverridesLoaded = true;
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'getReservoirKmlOverrides' }) });
+                const result = await response.json(); if (!response.ok || !result.success || !Array.isArray(result.items)) return;
+                result.items.forEach(item => { if (item?.name && item?.text) reservoirKmlOverrides[canonicalReservoirName(item.name)] = { ...item, uploaded: true }; });
+                if (activeModule === 'demand') renderDemandMapLayers();
+            } catch (_) {}
+        }
+
         function numberValue(value) {
             const match = String(value ?? '').replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
             return match ? Number(match[0]) : 0;
@@ -779,6 +851,7 @@
             reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
             reservoirDataLoaded = true;
             restoreLocalSheetDraft('kolam'); populateDemandFilters(); applyDemandFilters(); renderSheetTable('kolam');
+            loadReservoirKmlOverrides();
             updateDemandStatus(`${reservoirRows.length.toLocaleString()} rekod dimuatkan`, 'success');
         }
 
@@ -1133,65 +1206,170 @@
                 const rowsHtml = r.pairs.map(item => `<div class="grid grid-cols-[115px_1fr] gap-2 py-1.5 border-b border-slate-100"><b class="text-[9px] uppercase text-slate-500">${escapeHtml(item.label)}</b><span class="text-[11px] text-slate-800 break-words">${escapeHtml(item.value)}</span></div>`).join('');
                 const img = imageUrl(r.image);
                 const popup = `<div><div class="flex items-start gap-2 mb-2"><span class="tank-popup-icon w-8 h-8 rounded-lg bg-sky-600 text-white grid place-items-center shrink-0">${TANK_ICON_SVG}</span><div><h4 class="font-black text-slate-900 leading-tight">${escapeHtml(r.name)}</h4><p class="text-[10px] text-slate-500 mt-1">${escapeHtml(r.mukim || r.supplyFrom || 'Port Dickson')}</p></div></div>${img ? `<img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(r.name)}" class="w-full h-28 object-cover rounded-lg mb-2" onerror="this.style.display='none'">` : ''}<div class="max-h-56 overflow-y-auto pr-1">${rowsHtml}</div><button onclick="openReservoirDetail(${r._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT PAPARAN PENUH</button></div>`;
-                L.marker([r.lat, r.long], { icon }).addTo(demandMarkerLayer).bindPopup(popup, { className: 'reservoir-popup', maxWidth: 380 });
+                L.marker([r.lat, r.long], { icon }).addTo(demandMarkerLayer).bindPopup(popup, { className: 'reservoir-popup', maxWidth: 380, autoPan: false, keepInView: false });
             });
             document.getElementById('demand-map-count').innerText = `${validCount.toLocaleString()} lokasi dipaparkan`;
             if (validCount && demandMarkerLayer.getBounds().isValid()) demandMap.fitBounds(demandMarkerLayer.getBounds(), { padding: [35,35], maxZoom: 15 });
-            renderDemandKml();
+            renderDemandMapLayers();
+        }
+
+        function updateDemandMapCount() {
+            const markerText = document.getElementById('demand-map-count'); if (!markerText) return;
+            const locationCount = filteredReservoirRows.filter(hasValidReservoirCoordinates).length;
+            markerText.innerText = `${locationCount.toLocaleString()} lokasi · ${demandLayerCounts.kolam.toLocaleString()} KML kolam · ${demandLayerCounts.secondary.toLocaleString()} secondary`;
+        }
+
+        function toggleDemandMapLayers() { renderDemandMapLayers(); }
+
+        async function renderDemandMapLayers() {
+            if (!demandMap) return;
+            demandLayerCounts = { kolam: 0, secondary: 0 }; updateDemandMapCount();
+            await Promise.all([renderDemandKml(), renderDemandSecondaryKml()]);
+            updateDemandMapCount();
         }
 
         async function renderDemandKml() {
             if (!demandMap) return;
             if (demandKmlLayer) demandMap.removeLayer(demandKmlLayer);
             demandKmlLayer = L.featureGroup().addTo(demandMap);
+            if (!document.getElementById('demand-layer-kolam')?.checked) { demandLayerCounts.kolam = 0; updateDemandMapCount(); return; }
             const manifest = window.KML_KOLAM_MANIFEST || [];
-            const canonicalName = value => normalizeHeader(value)
-                .replace(/\bTMN\b/g, 'TAMAN')
-                .replace(/\bBKT\b/g, 'BUKIT')
-                .replace(/\bKG\b/g, 'KAMPUNG')
-                .replace(/\bTELUK\b/g, 'TELOK')
-                .trim();
-            const namesMatch = (left, right) => {
-                const a = canonicalName(left), b = canonicalName(right);
-                return a === b || (Math.min(a.length, b.length) >= 8 && (a.includes(b) || b.includes(a)));
-            };
-            const visible = manifest.filter(item => filteredReservoirRows.some(record => namesMatch(item.name, record.name)));
-            const distinctNameKeys = [...new Set(manifest.map(item => canonicalName(item.name)))].sort();
+            const overriddenNames = new Set(Object.keys(reservoirKmlOverrides));
+            const standardItems = manifest.filter(item => !overriddenNames.has(canonicalReservoirName(item.name)) && filteredReservoirRows.some(record => reservoirNamesMatch(item.name, record.name)));
+            const overrideItems = Object.values(reservoirKmlOverrides).filter(item => filteredReservoirRows.some(record => reservoirNamesMatch(item.name, record.name)));
+            const visible = [...standardItems, ...overrideItems];
+            const distinctNameKeys = [...new Set([...manifest.map(item => canonicalReservoirName(item.name)), ...Object.keys(reservoirKmlOverrides)])].sort();
             const colourForName = name => {
-                const index = Math.max(0, distinctNameKeys.indexOf(canonicalName(name)));
+                const index = Math.max(0, distinctNameKeys.indexOf(canonicalReservoirName(name)));
                 return `hsl(${Math.round((index * 137.508) % 360)} 76% 42%)`;
             };
             await Promise.all(visible.map(async item => {
                 try {
-                    let text = kmlTextCache.get(item.path);
-                    if (!text) { const response = await fetch(encodeURI(item.path)); if (!response.ok) throw new Error(); text = await response.text(); kmlTextCache.set(item.path, text); }
+                    let text = item.text || kmlTextCache.get(item.path);
+                    if (!text && item.path) { const response = await fetch(encodeURI(item.path)); if (!response.ok) throw new Error(); text = await response.text(); kmlTextCache.set(item.path, text); }
                     const xml = new DOMParser().parseFromString(text, 'text/xml');
                     const colour = colourForName(item.name);
-                    const linkedRecord = filteredReservoirRows.find(record => namesMatch(item.name, record.name));
+                    const linkedRecord = filteredReservoirRows.find(record => reservoirNamesMatch(item.name, record.name));
                     for (const node of xml.getElementsByTagName('coordinates')) {
                         const points = node.textContent.trim().split(/\s+/).map(part => { const values = part.split(',').map(Number); return values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1]) ? [values[1], values[0]] : null; }).filter(Boolean);
                         if (points.length < 2) continue;
                         const isPolygon = points.length >= 3 && points[0][0] === points[points.length - 1][0] && points[0][1] === points[points.length - 1][1];
                         const layer = isPolygon ? L.polygon(points, { color: colour, weight: 3, fillColor: colour, fillOpacity: .18 }) : L.polyline(points, { color: colour, weight: 4, opacity: .82 });
                         layer.bindTooltip(`${item.name}${linkedRecord?.supplyFrom ? ` · ${linkedRecord.supplyFrom}` : ''}`, { sticky: true });
-                        layer.bindPopup(`<div class="p-1"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:${colour}"></span><p class="text-[10px] uppercase font-bold text-slate-500">KML Kolam</p></div><h4 class="font-black text-slate-900 mt-2">${escapeHtml(item.name)}</h4>${linkedRecord ? `<p class="text-xs text-slate-600 mt-1"><b>Supply From:</b> ${escapeHtml(linkedRecord.supplyFrom || '-')}</p><p class="text-xs text-slate-600"><b>Secondary Supply:</b> ${escapeHtml(linkedRecord.secondarySupply || '-')}</p><button onclick="openReservoirDetail(${linkedRecord._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT BUTIRAN KOLAM</button>` : `<p class="text-xs text-slate-600 mt-1"><b>Folder KML:</b> ${escapeHtml(item.supply)}</p>`}</div>`);
+                        layer.bindPopup(`<div class="p-1"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:${colour}"></span><p class="text-[10px] uppercase font-bold text-slate-500">${item.uploaded ? 'KML Kolam Dikemas Kini' : 'KML Kolam'}</p></div><h4 class="font-black text-slate-900 mt-2">${escapeHtml(item.name)}</h4>${linkedRecord ? `<p class="text-xs text-slate-600 mt-1"><b>Supply From:</b> ${escapeHtml(linkedRecord.supplyFrom || '-')}</p><p class="text-xs text-slate-600"><b>Secondary Supply:</b> ${escapeHtml(linkedRecord.secondarySupply || '-')}</p><button onclick="openReservoirDetail(${linkedRecord._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT BUTIRAN KOLAM</button>` : `<p class="text-xs text-slate-600 mt-1"><b>Folder KML:</b> ${escapeHtml(item.supply || '-')}</p>`}</div>`);
                         layer.addTo(demandKmlLayer);
                     }
                 } catch (_) {}
             }));
             const markerBounds = demandMarkerLayer?.getBounds?.(); const kmlBounds = demandKmlLayer.getBounds();
             if ((!markerBounds || !markerBounds.isValid()) && kmlBounds.isValid()) demandMap.fitBounds(kmlBounds, { padding: [30,30], maxZoom: 13 });
-            const markerText = document.getElementById('demand-map-count');
-            if (markerText) markerText.innerText = `${filteredReservoirRows.filter(hasValidReservoirCoordinates).length.toLocaleString()} lokasi · ${visible.length.toLocaleString()} sub KML`;
+            demandLayerCounts.kolam = visible.length; updateDemandMapCount();
+        }
+
+        async function renderDemandSecondaryKml() {
+            if (!demandMap) return;
+            if (demandSecondaryKmlLayer) demandMap.removeLayer(demandSecondaryKmlLayer);
+            demandSecondaryKmlLayer = L.featureGroup().addTo(demandMap);
+            if (!document.getElementById('demand-layer-secondary')?.checked) { demandLayerCounts.secondary = 0; updateDemandMapCount(); return; }
+            const snapshot = window.PROTOTYPE_SHEET_DATA?.masterlist;
+            const headers = masterlistHeaders.length ? masterlistHeaders : (snapshot?.headers || []);
+            const rows = masterlistRawRows.length ? masterlistRawRows : (snapshot?.rows || []);
+            const indexOf = name => headers.findIndex(header => normalizeHeader(header) === normalizeHeader(name));
+            const lraIndex = indexOf('LRA'), kolamIndex = indexOf('KOLAM UTAMA'), secondaryIndex = indexOf('SECONDARY SUPPLY'), areaIndex = indexOf('KAWASAN');
+            if ([lraIndex, kolamIndex, secondaryIndex].some(index => index < 0)) return;
+            const visibleSecondaries = new Set(filteredReservoirRows.map(record => canonicalReservoirName(record.secondarySupply)).filter(Boolean));
+            const combinations = new Map();
+            rows.forEach(row => {
+                const secondary = String(row[secondaryIndex] || '').trim(); if (!secondary || !visibleSecondaries.has(canonicalReservoirName(secondary))) return;
+                const lra = String(row[lraIndex] || '').trim(), kolam = String(row[kolamIndex] || '').trim(), area = String(row[areaIndex] || '').trim();
+                const key = [lra, kolam, secondary].join('|'); if (!combinations.has(key)) combinations.set(key, { lra, kolam, secondary, area });
+            });
+            const drawnUrls = new Set();
+            await Promise.all([...combinations.values()].map(async item => {
+                try {
+                    const names = [`${item.lra}_${item.kolam}_${item.secondary}.kml`, `${item.lra}_${item.kolam}_${item.secondary}_${item.area}.kml`, `${item.lra}_${item.kolam}.kml`];
+                    const result = await fetchKmlWithFallbackAsync(names); if (!result || drawnUrls.has(result.url)) return;
+                    drawnUrls.add(result.url);
+                    const xml = new DOMParser().parseFromString(result.txt, 'text/xml');
+                    for (const node of xml.getElementsByTagName('coordinates')) {
+                        const points = node.textContent.trim().split(/\s+/).map(part => { const values = part.split(',').map(Number); return values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1]) ? [values[1], values[0]] : null; }).filter(Boolean);
+                        if (points.length < 3) continue;
+                        L.polygon(points, { color: '#7c3aed', weight: 3, dashArray: '8 6', fillColor: '#8b5cf6', fillOpacity: .08 })
+                            .bindTooltip(`Secondary Supply: ${item.secondary}`, { sticky: true })
+                            .bindPopup(`<div class="p-1"><p class="text-[10px] uppercase font-bold text-violet-600">Polygon Secondary Supply</p><h4 class="font-black text-slate-900 mt-1">${escapeHtml(item.secondary)}</h4><p class="text-xs text-slate-600 mt-1">${escapeHtml(item.kolam)} · ${escapeHtml(item.lra)}</p></div>`)
+                            .addTo(demandSecondaryKmlLayer);
+                    }
+                } catch (_) {}
+            }));
+            demandLayerCounts.secondary = drawnUrls.size; updateDemandMapCount();
+        }
+
+        function reservoirDetailGroup(label, index) {
+            const key = normalizeHeader(label);
+            if (/^(PUMP HOUSE|ST PAAB TAGGING NO|SUCTION TANK|CAPACITY ML|TWL ST|BWL ST|STATUS ST)$/.test(key)) return 'suction';
+            if (/^(TAGGING NO PAAB|CAPACITY MG|SERVICE RESERVOIR CAPACITY ML|TWL|BWL|SERVICE RESERVOIR STATUS)$/.test(key)) return 'service';
+            return 'general';
+        }
+
+        function renderReservoirDetailSection(title, icon, colour, items, editable) {
+            const tones = {
+                green: 'border-emerald-200 bg-emerald-50/75 text-emerald-800',
+                blue: 'border-blue-200 bg-blue-50/75 text-blue-800',
+                red: 'border-rose-200 bg-rose-50/75 text-rose-800'
+            };
+            const fields = items.map(item => `<label class="detail-field block rounded-xl border border-white/80 bg-white/65 p-3"><span class="block text-[10px] uppercase tracking-wide font-bold opacity-70">${escapeHtml(item.label)}</span><input data-reservoir-column="${item.index}" value="${escapeHtml(item.value)}" ${editable ? '' : 'readonly'}></label>`).join('');
+            return `<section class="rounded-2xl border p-4 ${tones[colour]}"><div class="flex items-center gap-2 mb-3"><span class="w-8 h-8 rounded-lg bg-white/80 grid place-items-center"><i class="fa-solid ${icon}"></i></span><div><h3 class="font-black">${title}</h3><p class="text-[10px] opacity-70">${editable ? 'Boleh diedit oleh pentadbir' : 'Paparan sahaja'}</p></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3">${fields || '<p class="text-xs opacity-70">Tiada maklumat.</p>'}</div></section>`;
         }
 
         function openReservoirDetail(id) {
             const record = reservoirRows.find(r => r._id === id); if (!record) return;
             document.getElementById('reservoir-detail-title').innerText = record.name;
-            const img = imageUrl(record.image);
-            const details = record.pairs.map(item => `<div class="rounded-lg border border-slate-200 bg-white p-3"><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>`).join('');
-            document.getElementById('reservoir-detail-content').innerHTML = `<div class="grid grid-cols-1 ${img ? 'lg:grid-cols-[280px_1fr]' : ''} gap-6">${img ? `<div><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></div>` : ''}<dl class="detail-grid grid grid-cols-1 sm:grid-cols-2 gap-3">${details}</dl></div>`;
+            const editable = userLevel === 'admin', img = imageUrl(record.image);
+            const groups = { general: [], service: [], suction: [] };
+            record.headers.forEach((label, index) => groups[reservoirDetailGroup(label, index)].push({ label, index, value: record.values[index] ?? '' }));
+            const override = reservoirKmlOverrides[canonicalReservoirName(record.name)];
+            const uploadPanel = `<section class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="font-black text-slate-800"><i class="fa-solid fa-draw-polygon text-violet-600 mr-2"></i>KML Polygon Kolam</h3><p id="reservoir-kml-status" class="text-xs text-slate-500 mt-1">${override ? `Menggunakan fail baharu: ${escapeHtml(override.fileName || 'KML tersimpan')}` : 'Menggunakan fail KML asal dalam sistem.'}</p></div>${editable ? `<label class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold cursor-pointer"><i class="fa-solid fa-cloud-arrow-up"></i> MUAT NAIK KML<input type="file" accept=".kml,application/vnd.google-earth.kml+xml" class="hidden" onchange="handleReservoirKmlUpload(event, ${record._id})"></label>` : '<span class="text-[10px] font-bold rounded-full bg-slate-200 text-slate-600 px-3 py-1.5">ADMIN SAHAJA</span>'}</div><p class="text-[10px] text-slate-400 mt-3">Fail KML baharu akan menggantikan polygon kolam ini pada peta selepas disahkan.</p></section>`;
+            document.getElementById('reservoir-detail-content').innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">${img ? `<aside><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></aside>` : '<aside class="hidden lg:block"></aside>'}<div class="space-y-4">${renderReservoirDetailSection('Maklumat Am', 'fa-circle-info', 'green', groups.general, editable)}${renderReservoirDetailSection('Kolam Servis', 'fa-water', 'blue', groups.service, editable)}${renderReservoirDetailSection('Suction Tank', 'fa-pump-soap', 'red', groups.suction, editable)}${uploadPanel}${editable ? `<div class="sticky bottom-0 bg-white/95 backdrop-blur border border-slate-200 rounded-xl p-3 flex flex-wrap justify-end gap-2 shadow-lg"><button onclick="closeReservoirDetail()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="reservoir-detail-save" onclick="saveReservoirDetails(${record._id})" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>SIMPAN KE DATABASE</button></div>` : ''}</div></div>`;
             document.getElementById('reservoir-detail-modal').classList.remove('hidden');
+        }
+
+        async function saveReservoirDetails(id) {
+            if (userLevel !== 'admin') { showToast('Akses edit hanya untuk admin.', true); return; }
+            const record = reservoirRows.find(item => item._id === id); if (!record) return;
+            const inputs = [...document.querySelectorAll('#reservoir-detail-content [data-reservoir-column]')];
+            inputs.forEach(input => {
+                const column = Number(input.dataset.reservoirColumn), value = input.value;
+                if (String(reservoirRawRows[id]?.[column] ?? '') === value) return;
+                reservoirRawRows[id][column] = value; sheetEdits.kolam[`${id}:${column}`] = value;
+            });
+            if (!Object.keys(sheetEdits.kolam).length) { showToast('Tiada perubahan untuk disimpan.'); return; }
+            const button = document.getElementById('reservoir-detail-save'); if (button) { button.disabled = true; button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>MENYIMPAN...'; }
+            reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(item => String(item.name || '').trim());
+            await saveSheetEdits('kolam'); populateDemandFilters(); applyDemandFilters();
+            const updated = reservoirRows.find(item => item._id === id); if (updated) openReservoirDetail(updated._id);
+        }
+
+        async function handleReservoirKmlUpload(event, id) {
+            if (userLevel !== 'admin') { showToast('Akses muat naik hanya untuk admin.', true); return; }
+            const file = event.target.files?.[0], record = reservoirRows.find(item => item._id === id); if (!file || !record) return;
+            const status = document.getElementById('reservoir-kml-status');
+            try {
+                if (!file.name.toLowerCase().endsWith('.kml')) throw new Error('Sila pilih fail berformat .kml.');
+                if (file.size > 8 * 1024 * 1024) throw new Error('Saiz fail KML mesti kurang daripada 8 MB.');
+                if (status) status.innerText = 'Menyemak fail KML...';
+                const text = await file.text(), xml = new DOMParser().parseFromString(text, 'text/xml');
+                if (xml.querySelector('parsererror') || !xml.getElementsByTagName('coordinates').length) throw new Error('Fail KML tidak sah atau tiada koordinat polygon.');
+                const key = canonicalReservoirName(record.name), entry = { name: String(record.name).trim(), supply: record.supplyFrom, fileName: file.name, text, uploaded: true, updatedAt: new Date().toISOString() };
+                reservoirKmlOverrides[key] = entry;
+                if (IS_LOCAL_PREVIEW) localStorage.setItem('pd-water-reservoir-kml-overrides-v1', JSON.stringify(reservoirKmlOverrides));
+                else {
+                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'saveReservoirKml', reservoirName: entry.name, supplyFrom: entry.supply, fileName: entry.fileName, kmlText: entry.text }) });
+                    const result = await response.json(); if (!response.ok || !result.success) throw new Error(result.error || 'KML gagal disimpan.');
+                }
+                if (status) status.innerText = `KML baharu aktif: ${file.name}`;
+                await renderDemandMapLayers(); showToast('KML baharu telah disimpan dan digunakan pada peta.');
+            } catch (error) { if (status) status.innerText = error.message; showToast(error.message || 'KML gagal dimuat naik.', true); }
+            finally { event.target.value = ''; }
         }
 
         function closeReservoirDetail() { document.getElementById('reservoir-detail-modal').classList.add('hidden'); }
