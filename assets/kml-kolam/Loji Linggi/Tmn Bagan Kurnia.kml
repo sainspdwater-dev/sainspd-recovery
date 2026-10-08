@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_Bagan_Kurnia</name>
+  <Placemark id="Tmn_Bagan_Kurnia.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.77718051896,2.59452593012443 101.778472237302,2.59313028042189 101.779986665703,2.59151192066043 101.780949268068,2.59048745438942 101.78126848582,2.59101453486219 101.781290756825,2.59281106267078 101.781602550908,2.59578795379162 101.779226976946,2.59552070172092 101.777564075173,2.59489711355595 101.77718051896,2.59452593012443</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

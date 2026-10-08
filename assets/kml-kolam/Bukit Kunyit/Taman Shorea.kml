@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>taman_shorea</name>
+  <Placemark id="taman_shorea.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.889097683731,2.46872918411053 101.886805225714,2.46708493836036 101.887485058092,2.46495058089621 101.88903444351,2.46319566475901 101.891105560753,2.46493477084092 101.891295281417,2.46580432388187 101.889097683731,2.46872918411053</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

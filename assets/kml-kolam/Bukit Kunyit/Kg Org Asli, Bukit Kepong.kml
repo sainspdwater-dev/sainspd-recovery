@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Kg_Org_Asli__Bukit_Kepong</name>
+  <Placemark id="Kg_Org_Asli__Bukit_Kepong.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.916094222011,2.43767738017431 101.921901180584,2.43873319082401 101.929503017262,2.44749641921647 101.934993232641,2.46555078132624 101.934782070511,2.47494749610852 101.92116211313,2.47336378013398 101.914193762842,2.46850705114538 101.915143992426,2.45309221565985 101.917994681181,2.4473908381515 101.916516546271,2.44390666300751 101.916270190453,2.44286404999093 101.916094222011,2.43767738017431</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_Sri_Tanjung</name>
+  <Placemark id="Tmn_Sri_Tanjung.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.80086944556,2.54811067929013 101.799399559172,2.54848186272166 101.798605226628,2.54811067929013 101.798003909469,2.54768010650956 101.798278585208,2.54704909467596 101.798954139054,2.54678926627389 101.800646735502,2.54682638461705 101.800906563904,2.54756132781147 101.800973376921,2.54805871360972 101.80086944556,2.54811067929013</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

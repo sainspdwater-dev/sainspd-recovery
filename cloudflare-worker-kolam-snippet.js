@@ -4,6 +4,11 @@
  * 1. In the Worker's action router, add:
  *      case 'getReservoirData':
  *        return jsonResponse(await getReservoirData(body, env));
+ *      case 'getSheetTable':
+ *        return jsonResponse(await getSheetTable(body, env));
+ *      case 'updateSheetCells':
+ *        // IMPORTANT: run the existing admin-token check before this line.
+ *        return jsonResponse(await updateSheetCells(body, env));
  *
  * 2. Copy the functions below into the same Worker source.
  * 3. Keep the existing GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, SHEET_ID and
@@ -37,6 +42,71 @@ async function getReservoirData(body, env) {
   return { success: true, ...result, cached: false };
 }
 
+const EDITABLE_SHEETS = {
+  'KOLAM DETAILS': { range: 'A:AF', headerRow: 1 },
+  'MASTERLIST': { range: 'A:S', headerRow: 3 }
+};
+
+async function getSheetTable(body, env) {
+  const sheetName = String(body?.sheetName || '').trim().toUpperCase();
+  const config = EDITABLE_SHEETS[sheetName];
+  if (!config) throw new Error('Sheet tidak dibenarkan.');
+  const cacheKey = `sheet-table:${sheetName}:v1`;
+  if (!body?.forceRefresh && env.GAS_CACHE) {
+    const cached = await env.GAS_CACHE.get(cacheKey, { type: 'json' });
+    if (cached?.data) return { success: true, ...cached, cached: true };
+  }
+  const accessToken = await getGoogleAccessToken(env);
+  const range = encodeURIComponent(`'${sheetName}'!${config.range}`);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values/${range}?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE`;
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
+  const payload = await response.json();
+  const values = Array.isArray(payload.values) ? payload.values : [];
+  const headerIndex = config.headerRow - 1;
+  const result = {
+    headers: values[headerIndex] || [],
+    data: values.slice(headerIndex + 1).filter(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim())),
+    headerRow: config.headerRow,
+    lastUpdated: new Date().toISOString()
+  };
+  if (env.GAS_CACHE) await env.GAS_CACHE.put(cacheKey, JSON.stringify(result), { expirationTtl: 300 });
+  return { success: true, ...result, cached: false };
+}
+
+async function updateSheetCells(body, env) {
+  const sheetName = String(body?.sheetName || '').trim().toUpperCase();
+  if (!EDITABLE_SHEETS[sheetName]) throw new Error('Sheet tidak dibenarkan.');
+  const updates = Array.isArray(body?.updates) ? body.updates : [];
+  if (!updates.length || updates.length > 500) throw new Error('Senarai perubahan tidak sah.');
+  const data = updates.map(update => {
+    const row = Number(update.row), column = Number(update.column);
+    if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || column > 32) throw new Error('Alamat sel tidak sah.');
+    return { range: `'${sheetName}'!${columnToLetter(column)}${row}`, values: [[update.value ?? '']] };
+  });
+  const accessToken = await getGoogleAccessToken(env);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values:batchUpdate`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data })
+  });
+  if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
+  if (env.GAS_CACHE) {
+    await Promise.all([
+      env.GAS_CACHE.delete(`sheet-table:${sheetName}:v1`),
+      sheetName === 'KOLAM DETAILS' ? env.GAS_CACHE.delete('kolam-details:v1') : Promise.resolve()
+    ]);
+  }
+  return { success: true, updatedCells: data.length };
+}
+
+function columnToLetter(column) {
+  let value = column, result = '';
+  while (value > 0) { value -= 1; result = String.fromCharCode(65 + (value % 26)) + result; value = Math.floor(value / 26); }
+  return result;
+}
+
 function normalizeKolamHeader(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
 }
@@ -49,7 +119,7 @@ async function getGoogleAccessToken(env) {
   const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const claims = base64Url(JSON.stringify({
     iss: env.GOOGLE_CLIENT_EMAIL,
-    scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600
@@ -88,4 +158,3 @@ function base64Url(value) {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
-

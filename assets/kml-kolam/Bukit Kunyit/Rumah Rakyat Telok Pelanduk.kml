@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Rumah_Rakyat_Telok_Pelanduk</name>
+  <Placemark id="Rumah_Rakyat_Telok_Pelanduk.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.880187311598,2.42368733916447 101.87947463941,2.42371703383899 101.878940135268,2.4224599592842 101.878382535269,2.42161531076445 101.875571439414,2.42139754981796 101.875769403911,2.41993261254151 101.879253579055,2.41995240899119 101.882341825205,2.4198336302931 101.883450426387,2.41997220544088 101.882381418104,2.42151632851605 101.880876887929,2.42315943383962 101.880433117515,2.42360155454918 101.880187311598,2.42368733916447</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="pekan_port_dickson" id="pekan_port_dickson">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="timestamp" type="string"></SimpleField>
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+	<SimpleField name="altitudeMode" type="string"></SimpleField>
+	<SimpleField name="tessellate" type="int"></SimpleField>
+	<SimpleField name="extrude" type="int"></SimpleField>
+	<SimpleField name="visibility" type="int"></SimpleField>
+	<SimpleField name="drawOrder" type="int"></SimpleField>
+	<SimpleField name="icon" type="string"></SimpleField>
+	<SimpleField name="layer" type="string"></SimpleField>
+	<SimpleField name="path" type="string"></SimpleField>
+</Schema>
+<Folder><name>pekan_port_dickson</name>
+  <Placemark id="pekan_port_dickson.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#pekan_port_dickson">
+		<SimpleData name="layer">Pekan PD 2</SimpleData>
+		<SimpleData name="path">Polygon?crs=EPSG:4326&amp;uid={54cb82b8-04fd-48b9-bc9d-daf961209ff1}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.796229418958,2.52831991750793 101.798284726145,2.52876259905605 101.798593022224,2.52688120247653 101.79746260327,2.52680215220008 101.796585145202,2.52653338126015 101.796229418958,2.52831991750793</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark id="pekan_port_dickson.2">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#pekan_port_dickson">
+		<SimpleData name="id">Pekan_Port_Dickson.1</SimpleData>
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="layer">Pekan Port Dickson</SimpleData>
+		<SimpleData name="path">C:\Users\User\Desktop\Dashboard_PD\Sistem Laporan Pembaikan\New folder\KML Kolam\Loji Linggi\Pekan Port Dickson.kml|layername=Pekan_Port_Dickson</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.794141345576,2.52357928264184 101.794764933741,2.5227478317552 101.794943101788,2.52188668619404 101.793547452085,2.52221332761379 101.79232997043,2.52203515956666 101.791557908892,2.5207879832367 101.789776228421,2.52194607554309 101.789984091143,2.52542035246225 101.79075615268,2.52678630749029 101.789538671025,2.52853829328714 101.790251343213,2.52981516429161 101.791943939661,2.52972608026805 101.794616460368,2.53376455600314 101.79515096451,2.53492264830952 101.793517757411,2.53605104594139 101.797496843797,2.54056463646884 101.798298600009,2.53996579386597 101.797897721903,2.53925312167742 101.799263676931,2.53812472404556 101.79899642486,2.53754567789237 101.798417378707,2.53656575363312 101.798150126636,2.53638758558598 101.797764095868,2.53582338677005 101.797437454448,2.53528888262864 101.797036576342,2.5342644163576 101.796323904153,2.53413079032225 101.795685468651,2.53438319505569 101.795210353859,2.5346504471264 101.794779781078,2.53375960689072 101.793814704156,2.53233426251363 101.793027795281,2.53113162819546 101.792730848536,2.53061197139131 101.793295047352,2.53012200926168 101.79249329114,2.53024078795977 101.792255733744,2.52981021517919 101.792077565697,2.52937964239861 101.792122107708,2.52859273352376 101.792359665105,2.52799884003331 101.793517757411,2.52793945068426 101.793651383446,2.5270783051231 101.793532604748,2.52649925896991 101.793176268654,2.52586082346767 101.793027795281,2.52489574654568 101.792998100607,2.5241979216944 101.793681078121,2.52370795956477 101.794141345576,2.52357928264184</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

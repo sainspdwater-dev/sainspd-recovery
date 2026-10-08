@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>bayu_teluk_kemang</name>
+  <Placemark id="bayu_teluk_kemang.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.861303606531,2.45371885411724 101.860860924983,2.45358051613345 101.860679109347,2.45346194071878 101.860386623325,2.45337103290086 101.860283857965,2.45327617256912 101.860181092606,2.45308645190564 101.860560533933,2.45228804411349 101.861058550674,2.45223270891997 101.861603997582,2.45253309997049 101.861540757361,2.45324455245854 101.861303606531,2.45371885411724</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

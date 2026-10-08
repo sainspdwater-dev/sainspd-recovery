@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_Desa_Rusa</name>
+  <Placemark id="Tmn_Desa_Rusa.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.845231033092,2.501699256631 101.845468590488,2.50051146965009 101.845617063861,2.4999324234969 101.847072102913,2.5000066601832 101.848690462674,2.50068963769723 101.848794394035,2.50138746254851 101.848141111195,2.50242677615681 101.845231033092,2.501699256631</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

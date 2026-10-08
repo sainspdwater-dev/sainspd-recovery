@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Nila_Aspira</name>
+  <Placemark id="Nila_Aspira.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.840440292269,2.50989993591169 101.838955558543,2.50949905780564 101.83788655026,2.50923180573493 101.837545061503,2.50900909567601 101.837648992864,2.50808856076581 101.837782618899,2.50785100336963 101.838985253218,2.50808856076581 101.839816704104,2.50828157615021 101.840915407062,2.50857852289543 101.840885712387,2.50921695839767 101.840677849665,2.50976630987634 101.840440292269,2.50989993591169</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

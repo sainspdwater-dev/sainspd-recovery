@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>taman_penaga</name>
+  <Placemark id="taman_penaga.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.878689397332,2.42458223972229 101.879258559322,2.4250407313257 101.880128112363,2.4251988318786 101.880175542529,2.42712765862399 101.877266492356,2.42788654127791 101.877124201858,2.42570475364788 101.878136045397,2.42493006093867 101.878689397332,2.42458223972229</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_Sengkang</name>
+  <Placemark id="Tmn_Sengkang.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.938301439343,2.43056972153658 101.939080099697,2.43223262330986 101.93972678372,2.43367116532007 101.938688569914,2.43564201186617 101.938279443288,2.43372835506359 101.934557710748,2.43375475032984 101.934544513114,2.43128679293617 101.938239850388,2.43129999056929 101.938358629086,2.43129999056929 101.938301439343,2.43056972153658</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

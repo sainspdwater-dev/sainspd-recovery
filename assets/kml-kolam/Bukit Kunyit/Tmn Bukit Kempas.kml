@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_Bukit_Kempas</name>
+  <Placemark id="Tmn_Bukit_Kempas.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>102.018028890929,2.44738515583715 102.017230434126,2.44754352743461 102.016669534718,2.44755672506773 102.016247210458,2.44743794636964 102.015613724068,2.44708820909192 102.015560933536,2.44684405287918 102.01568631105,2.44665268719892 102.015455352471,2.44643492625242 102.015679712234,2.4459862067263 102.017012673179,2.44625675820529 102.017672554835,2.44646792033523 102.017936507498,2.44702881974288 102.018028890929,2.44738515583715</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

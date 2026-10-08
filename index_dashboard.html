@@ -31,6 +31,24 @@
         .reservoir-popup .leaflet-popup-content { margin: 14px; min-width: 260px; }
         .detail-grid dt { color: #64748b; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
         .detail-grid dd { color: #0f172a; font-size: .82rem; font-weight: 600; margin-top: .2rem; overflow-wrap: anywhere; }
+        .sheet-shell { max-height: 68vh; overflow: auto; border: 1px solid #cbd5e1; border-radius: .75rem; background: white; }
+        .sheet-grid { border-collapse: separate; border-spacing: 0; min-width: max-content; font-size: 12px; }
+        .sheet-grid th, .sheet-grid td { min-width: 150px; max-width: 260px; height: 38px; padding: 7px 9px; border-right: 1px solid #dbe3ee; border-bottom: 1px solid #dbe3ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: white; }
+        .sheet-grid thead th { position: sticky; top: 0; z-index: 20; min-height: 44px; height: 44px; background: #176149; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: .025em; white-space: normal; }
+        .sheet-grid thead tr.sheet-filter-row th { top: 44px; height: 39px; padding: 5px; background: #e8f3ee; z-index: 19; }
+        .sheet-grid .sheet-col-0 { position: sticky; left: 0; z-index: 12; min-width: 170px; max-width: 170px; box-shadow: 1px 0 0 #cbd5e1; }
+        .sheet-grid .sheet-col-1 { position: sticky; left: 170px; z-index: 12; min-width: 170px; max-width: 170px; box-shadow: 2px 0 5px rgba(15, 23, 42, .12); }
+        .sheet-grid thead .sheet-col-0, .sheet-grid thead .sheet-col-1 { z-index: 30; background: #14543f; }
+        .sheet-grid thead tr.sheet-filter-row .sheet-col-0, .sheet-grid thead tr.sheet-filter-row .sheet-col-1 { z-index: 29; background: #dcece5; }
+        .sheet-grid tbody tr:nth-child(even) td { background: #f8fafc; }
+        .sheet-grid tbody tr:nth-child(even) .sheet-col-0, .sheet-grid tbody tr:nth-child(even) .sheet-col-1 { background: #f1f5f9; }
+        .sheet-grid td.sheet-editable { cursor: text; outline: none; }
+        .sheet-grid td.sheet-editable:hover { background: #eff6ff !important; box-shadow: inset 0 0 0 1px #93c5fd; }
+        .sheet-grid td.sheet-editable:focus { background: #dbeafe !important; box-shadow: inset 0 0 0 2px #2563eb; }
+        .sheet-grid td.sheet-dirty::after { content: ''; float: right; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; margin: 4px 0 0 6px; }
+        .sheet-filter-input { width: 100%; min-width: 120px; border: 1px solid #b6c9bf; border-radius: 5px; padding: 5px 6px; color: #0f172a; background: white; font-size: 10px; outline: none; }
+        .sheet-filter-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
+        .demand-view-tab.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, .22); }
         @media (max-width: 767px) {
             #demand-map { height: 460px; }
             body.sidebar-open { overflow: hidden; }
@@ -314,6 +332,13 @@
 
         <!-- MODUL DEMAND BEKALAN AIR -->
         <section id="tab-demand" class="space-y-6 hidden">
+            <div class="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex flex-wrap gap-2" data-html2canvas-ignore="true">
+                <button id="demand-tab-dashboard" onclick="switchDemandView('dashboard')" class="demand-view-tab active px-4 py-2.5 rounded-lg border border-slate-200 text-xs font-bold"><i class="fa-solid fa-chart-line mr-2"></i>DASHBOARD</button>
+                <button id="demand-tab-kolam" onclick="switchDemandView('kolam')" class="demand-view-tab px-4 py-2.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-table-cells mr-2"></i>KOLAM DETAILS</button>
+                <button id="demand-tab-masterlist" onclick="switchDemandView('masterlist')" class="demand-view-tab px-4 py-2.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-list-check mr-2"></i>MASTERLIST</button>
+            </div>
+
+            <div id="demand-view-dashboard" class="space-y-6">
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-950 to-cyan-900 text-white p-6 md:p-8 shadow-xl">
                 <div class="absolute -right-14 -top-20 w-64 h-64 rounded-full bg-cyan-400/10 blur-2xl"></div>
                 <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-5">
@@ -330,9 +355,10 @@
                 <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200 col-span-2 lg:col-span-1"><p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Kapasiti Kolam</p><h3 id="d-kpi-capacity" class="text-xl font-black mt-1 text-emerald-700">0 ML</h3></div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3" data-html2canvas-ignore="true">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-5 gap-3" data-html2canvas-ignore="true">
                 <label class="md:col-span-2 relative"><span class="sr-only">Cari kolam</span><i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i><input id="demand-search" oninput="applyDemandFilters()" type="search" placeholder="Cari nama kolam, tagging, mukim..." class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></label>
-                <select id="demand-supply-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Supply From</option></select>
+                <select id="demand-supply-filter" onchange="onDemandSupplyChange()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Supply From</option></select>
+                <select id="demand-secondary-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Secondary Supply</option></select>
                 <select id="demand-status-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Status</option></select>
             </div>
 
@@ -352,6 +378,37 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-bold text-slate-800">Direktori Kolam Servis</h3><p id="demand-list-count" class="text-xs text-slate-500 mt-1">0 rekod</p></div></div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-[11px] uppercase text-slate-500"><tr><th class="p-3">Nama Kolam</th><th class="p-3">Supply From</th><th class="p-3">Demand / Hari</th><th class="p-3">Sambungan</th><th class="p-3">Kapasiti (ML)</th><th class="p-3">Status</th><th class="p-3 text-center">Butiran</th></tr></thead><tbody id="demand-table-body"></tbody></table></div>
+            </div>
+            </div>
+
+            <div id="demand-view-kolam" class="hidden space-y-4">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                    <div><div class="flex items-center gap-2"><h2 class="text-lg font-black text-slate-900">KOLAM DETAILS</h2><span id="kolam-access-badge" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600">VIEW ONLY</span></div><p class="text-xs text-slate-500 mt-1">Baris pertama dan dua kolum pertama dibekukan ketika skrol.</p></div>
+                    <div class="flex flex-wrap gap-2" data-html2canvas-ignore="true">
+                        <button onclick="toggleSheetFilters('kolam')" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold"><i class="fa-solid fa-filter mr-1"></i> FILTER</button>
+                        <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
+                        <button onclick="addSheetRow('kolam')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> TAMBAH BARIS</button>
+                        <button onclick="saveSheetEdits('kolam')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN</button>
+                    </div>
+                </div>
+                <div id="kolam-sheet-notice" class="hidden rounded-lg border p-3 text-xs"></div>
+                <div class="sheet-shell"><table id="kolam-sheet-table" class="sheet-grid"></table></div>
+                <div class="flex items-center justify-between text-xs text-slate-500"><span id="kolam-sheet-count">0 rekod</span><span id="kolam-sheet-save-status">Tiada perubahan</span></div>
+            </div>
+
+            <div id="demand-view-masterlist" class="hidden space-y-4">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                    <div><div class="flex items-center gap-2"><h2 class="text-lg font-black text-slate-900">MASTERLIST</h2><span id="masterlist-access-badge" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600">VIEW ONLY</span></div><p class="text-xs text-slate-500 mt-1">Paparan gaya Google Sheet dengan filter setiap kolum.</p></div>
+                    <div class="flex flex-wrap gap-2" data-html2canvas-ignore="true">
+                        <button onclick="toggleSheetFilters('masterlist')" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold"><i class="fa-solid fa-filter mr-1"></i> FILTER</button>
+                        <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
+                        <button onclick="addSheetRow('masterlist')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> TAMBAH BARIS</button>
+                        <button onclick="saveSheetEdits('masterlist')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN</button>
+                    </div>
+                </div>
+                <div id="masterlist-sheet-notice" class="hidden rounded-lg border p-3 text-xs"></div>
+                <div class="sheet-shell"><table id="masterlist-sheet-table" class="sheet-grid"></table></div>
+                <div class="flex items-center justify-between text-xs text-slate-500"><span id="masterlist-sheet-count">0 rekod</span><span id="masterlist-sheet-save-status">Tiada perubahan</span></div>
             </div>
         </section>
 
@@ -406,10 +463,12 @@
     </div><!-- /app-shell -->
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="assets/kml-kolam-manifest.js"></script>
     <script>
         const API_URL = "https://sains-pd-api.apiz1335.workers.dev";
         const KML_BASE_URL = "https://raw.githubusercontent.com/apiz1335-cmd/kml-water-supply-data-6/main/";
         const IS_LOCAL_PREVIEW = ['localhost', '127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).get('preview') === '1';
+        const LOCAL_PREVIEW_LEVEL = new URLSearchParams(location.search).get('level') === 'guest' ? 'guest' : 'admin';
         let globalData = []; let globalDataFizikal = []; let activeTabName = 'fisik'; let map = null; let geoLayers = [];
         let chartRecInstance = null; let chartUseInstance = null; let chartFisikStatusInst = null; let chartFisikDurInst = null;
         let refreshInterval = null; let timerInterval = null;
@@ -418,7 +477,13 @@
         let isLiveMode = false;
         let activeModule = 'recovery';
         let reservoirRows = []; let filteredReservoirRows = []; let reservoirDataLoaded = false; let reservoirLoading = false;
-        let demandMap = null; let demandMarkerLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
+        let reservoirHeaders = []; let reservoirRawRows = []; let masterlistHeaders = []; let masterlistRawRows = []; let masterlistDataLoaded = false;
+        let activeDemandView = 'dashboard';
+        let sheetFilterVisible = { kolam: true, masterlist: true };
+        let sheetFilters = { kolam: {}, masterlist: {} };
+        let sheetEdits = { kolam: {}, masterlist: {} };
+        let demandMap = null; let demandMarkerLayer = null; let demandKmlLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
+        const kmlTextCache = new Map();
         
         let userLevel = "guest";
 
@@ -453,11 +518,18 @@
             }, 60000); // Semak setiap 1 minit di background
             // --------------------------------
             
-            userLevel = (IS_LOCAL_PREVIEW ? 'admin' : (sessionStorage.getItem('pd_water_user_level') || 'guest')).toLowerCase();
+            userLevel = (IS_LOCAL_PREVIEW ? LOCAL_PREVIEW_LEVEL : (sessionStorage.getItem('pd_water_user_level') || 'guest')).toLowerCase();
             document.getElementById('sidebar-user-level').innerText = userLevel === 'admin' ? 'Pentadbir' : 'Pengguna';
             if (userLevel === 'admin') {
                 document.getElementById('nav-admin-recovery').classList.remove('hidden');
-                document.getElementById('nav-admin-whatsapp').classList.remove('hidden'); 
+                document.getElementById('nav-admin-whatsapp').classList.remove('hidden');
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                ['kolam', 'masterlist'].forEach(key => {
+                    const badge = document.getElementById(`${key}-access-badge`);
+                    if (badge) { badge.innerText = 'ADMIN · BOLEH EDIT'; badge.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700'; }
+                });
+            } else {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
             }
 
             fetchData(true);
@@ -573,6 +645,9 @@
                     }
                     const embeddedReservoirData = res.reservoirData || res.dataKolam || res.kolamDetails;
                     if (embeddedReservoirData) ingestReservoirPayload(embeddedReservoirData, res.reservoirHeaders || res.kolamHeaders);
+                    const embeddedMasterlist = res.masterlistData || res.dataMasterlist || res.masterlist;
+                    if (embeddedMasterlist) ingestMasterlistPayload(embeddedMasterlist, res.masterlistHeaders);
+                    else buildMasterlistFallback();
                     if (activeModule === 'recovery') {
                         switchTab(activeTabName, true);
                         if (activeTabName === 'fisik' && !isInitial) renderPhysicalWork();
@@ -644,7 +719,7 @@
             });
             const name = pickMapped(mapped, ['RESERVOIR NAME', 'NAMA KOLAM']);
             return {
-                _id: id, name, pairs,
+                _id: id, rowNumber: id + 2, name, pairs, headers, values: headers.map((_, index) => values[index] ?? ''),
                 supplyFrom: pickMapped(mapped, ['SUPPLY FROM']),
                 secondarySupply: pickMapped(mapped, ['SECONDARY SUPPLY']),
                 demandMonth: numberValue(pickMapped(mapped, ['DEMAND PER MONTH (M3)', 'DEMAND PER MONTH'])),
@@ -679,10 +754,184 @@
                 if (headerIndex >= 0) { headers = rows[headerIndex]; rows = rows.slice(headerIndex + 1); }
                 else headers = KOLAM_FALLBACK_HEADERS.slice(0, Math.max(KOLAM_FALLBACK_HEADERS.length, rows[0]?.length || 0));
             }
-            reservoirRows = rows.map((row, index) => makeReservoirRecord(headers, row, index)).filter(r => String(r.name || '').trim());
+            reservoirHeaders = headers.map((header, index) => String(header || KOLAM_FALLBACK_HEADERS[index] || `COLUMN ${index + 1}`).trim());
+            reservoirRawRows = rows.map(row => reservoirHeaders.map((_, index) => row[index] ?? ''));
+            reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
             reservoirDataLoaded = true;
-            populateDemandFilters(); applyDemandFilters();
+            restoreLocalSheetDraft('kolam'); populateDemandFilters(); applyDemandFilters(); renderSheetTable('kolam');
             updateDemandStatus(`${reservoirRows.length.toLocaleString()} rekod dimuatkan`, 'success');
+        }
+
+        function buildKolamPrototypeFallback() {
+            const makeRow = values => KOLAM_FALLBACK_HEADERS.map(header => values[header] ?? '');
+            const rows = [
+                makeRow({'RESERVOIR NAME':'Kampung Tampin Linggi (LINGGI)','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'PRV Pengkalan Kempas','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/29/S/RC','CONSTRUCTION DATE':'01/01/1991','CAPACITY (MG)':0.1,'SERVICE RESERVOIR CAPACITY (ML)':0.45,'TWL':45.1,'BWL':42.3,'LAT':2.504699,'LONG':102.002022,'MUKIM/ PEKAN/ BANDAR':'Linggi','NO LOT/PT':'2868'}),
+                makeRow({'RESERVOIR NAME':'Rumah Rakyat Linggi','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'Kolam Tampin Linggi','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/26/S/PG','CONSTRUCTION DATE':'11/06/1988','CAPACITY (MG)':0.05,'SERVICE RESERVOIR CAPACITY (ML)':0.25,'TWL':17.2,'BWL':12,'LAT':2.498131,'LONG':102.002114}),
+                makeRow({'RESERVOIR NAME':'Rumah Rakyat Pengkalan Durian','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'PRV Pengkalan Kempas','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/24/S/RC','CONSTRUCTION DATE':'10/05/1990','CAPACITY (MG)':0.08,'SERVICE RESERVOIR CAPACITY (ML)':0.36,'TWL':16.4,'BWL':12.8,'LAT':2.487707,'LONG':102.020484,'NO LOT/PT':'3622'}),
+                makeRow({'RESERVOIR NAME':'Rumah Rakyat Pengkalan Durian 2','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'PRV Pengkalan Kempas','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/25/S/PS','CONSTRUCTION DATE':'01/01/1990','CAPACITY (MG)':0.05,'SERVICE RESERVOIR CAPACITY (ML)':0.21,'TWL':18,'BWL':14,'LAT':2.487967,'LONG':102.020295,'NO LOT/PT':'4828'}),
+                makeRow({'RESERVOIR NAME':'Rumah Rakyat Permatang Pasir','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'PRV Pengkalan Kempas','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/20/S/RC','CONSTRUCTION DATE':'01/01/2006','CAPACITY (MG)':0.02,'SERVICE RESERVOIR CAPACITY (ML)':0.09,'TWL':14.4,'BWL':12,'LAT':2.463588,'LONG':102.020139,'MUKIM/ PEKAN/ BANDAR':'Linggi','NO LOT/PT':'20123 (PT 3660)'}),
+                makeRow({'RESERVOIR NAME':'Tmn Bukit Kempas','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'PRV Pengkalan Kempas','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/10/S/RC','CONSTRUCTION DATE':'20/10/2005','CAPACITY (MG)':0.04,'SERVICE RESERVOIR CAPACITY (ML)':0.19,'TWL':35,'BWL':32,'LAT':2.447391432,'LONG':102.0165767,'MUKIM/ PEKAN/ BANDAR':'Pekan Pengkalan Kempas','NO LOT/PT':'2939'}),
+                makeRow({'RESERVOIR NAME':'Bkt Kuau Baru','SUPPLY FROM':'BUKIT KUNYIT','SECONDARY SUPPLY':'Bukit Kuau Baru','DEMAND PER DAY (M3)':0,'TAGGING NO PAAB':'N/003/RS/51/S/RC','CONSTRUCTION DATE':'20/08/2010','CAPACITY (MG)':1,'SERVICE RESERVOIR CAPACITY (ML)':4.55,'TWL':46,'BWL':40,'LAT':2.424808,'LONG':101.954519,'NO LOT/PT':'3374'})
+            ];
+            ingestReservoirPayload({ headers: KOLAM_FALLBACK_HEADERS, rows });
+            updateDemandStatus('7 rekod contoh lokal', 'success');
+            showSheetNotice('kolam', 'Mod prototaip lokal: 7 rekod contoh daripada paparan KOLAM DETAILS digunakan untuk menguji jadual, peta, penapis dan edit.', 'info');
+        }
+
+        const MASTERLIST_FALLBACK_HEADERS = ['LRA','KOLAM UTAMA','SECONDARY SUPPLY','KAWASAN','NO BUKU','DUPLICATE','BILANGAN AKAUN','JUMLAH PENGGUNAAN'];
+
+        function unpackSheetPayload(payload, explicitHeaders, fallbackHeaders) {
+            let rows = Array.isArray(payload) ? payload : (payload?.values || payload?.data || payload?.rows || []);
+            let headers = Array.isArray(explicitHeaders) ? explicitHeaders : (payload?.headers || []);
+            if (!Array.isArray(rows)) rows = [];
+            if (rows.length && !Array.isArray(rows[0]) && typeof rows[0] === 'object') {
+                headers = headers.length ? headers : Object.keys(rows[0]);
+                rows = rows.map(item => headers.map(header => item[header] ?? ''));
+            }
+            if (!headers.length && rows.length) {
+                const headerIndex = rows.findIndex((row, index) => index < 8 && Array.isArray(row) && row.some(cell => normalizeHeader(cell) === normalizeHeader(fallbackHeaders[0])));
+                if (headerIndex >= 0) { headers = rows[headerIndex]; rows = rows.slice(headerIndex + 1); }
+                else headers = fallbackHeaders.slice(0, Math.max(fallbackHeaders.length, rows[0]?.length || 0));
+            }
+            headers = headers.map((header, index) => String(header || fallbackHeaders[index] || `COLUMN ${index + 1}`).trim());
+            rows = rows.filter(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim())).map(row => headers.map((_, index) => row[index] ?? ''));
+            return { headers, rows };
+        }
+
+        function ingestMasterlistPayload(payload, explicitHeaders) {
+            const table = unpackSheetPayload(payload, explicitHeaders, MASTERLIST_FALLBACK_HEADERS);
+            masterlistHeaders = table.headers; masterlistRawRows = table.rows; masterlistDataLoaded = true;
+            restoreLocalSheetDraft('masterlist'); renderSheetTable('masterlist');
+        }
+
+        function buildMasterlistFallback() {
+            if (masterlistDataLoaded || !globalData?.length) return;
+            const rows = globalData.slice(4).filter(row => Array.isArray(row) && row.some(cell => String(cell ?? '').trim()));
+            if (!rows.length) return;
+            const maxColumns = Math.max(...rows.map(row => row.length));
+            masterlistHeaders = Array.from({ length: maxColumns }, (_, index) => MASTERLIST_FALLBACK_HEADERS[index] || `COLUMN ${index + 1}`);
+            masterlistRawRows = rows.map(row => masterlistHeaders.map((_, index) => row[index] ?? ''));
+            masterlistDataLoaded = true; restoreLocalSheetDraft('masterlist'); renderSheetTable('masterlist');
+            showSheetNotice('masterlist', 'Paparan prototaip menggunakan data recovery semasa. Endpoint MASTERLIST akan digunakan apabila Worker dikemas kini.', 'info');
+        }
+
+        async function fetchMasterlistData(forceRefresh = false) {
+            showSheetNotice('masterlist', 'Memuatkan MASTERLIST...', 'loading');
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'getSheetTable', sheetName: 'MASTERLIST', forceRefresh }) });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error || 'MASTERLIST tidak tersedia.');
+                ingestMasterlistPayload(result.data || result.values || result.rows || result, result.headers);
+                showSheetNotice('masterlist', `${masterlistRawRows.length.toLocaleString()} rekod MASTERLIST dimuatkan.`, 'success');
+            } catch (error) {
+                buildMasterlistFallback();
+                if (!masterlistDataLoaded) showSheetNotice('masterlist', error.message || 'MASTERLIST tidak dapat dimuatkan.', 'error');
+            }
+        }
+
+        function switchDemandView(view) {
+            activeDemandView = view;
+            ['dashboard','kolam','masterlist'].forEach(key => {
+                document.getElementById(`demand-view-${key}`).classList.toggle('hidden', key !== view);
+                document.getElementById(`demand-tab-${key}`).classList.toggle('active', key === view);
+            });
+            if (view === 'kolam') {
+                if (!reservoirDataLoaded && !reservoirLoading) fetchReservoirData(); else renderSheetTable('kolam');
+            } else if (view === 'masterlist') {
+                if (!masterlistDataLoaded) fetchMasterlistData(); else renderSheetTable('masterlist');
+            } else setTimeout(() => { if (demandMap) demandMap.invalidateSize(); }, 150);
+        }
+
+        function sheetState(key) {
+            return key === 'kolam'
+                ? { headers: reservoirHeaders, rows: reservoirRawRows, tableId: 'kolam-sheet-table', headerRow: 1, sheetName: 'KOLAM DETAILS' }
+                : { headers: masterlistHeaders, rows: masterlistRawRows, tableId: 'masterlist-sheet-table', headerRow: 3, sheetName: 'MASTERLIST' };
+        }
+
+        function renderSheetTable(key) {
+            const state = sheetState(key), table = document.getElementById(state.tableId); if (!table) return;
+            const filters = sheetFilters[key];
+            const visibleRows = state.rows.map((row, rowIndex) => ({ row, rowIndex })).filter(item => state.headers.every((_, colIndex) => {
+                const query = String(filters[colIndex] || '').trim().toLowerCase();
+                return !query || String(item.row[colIndex] ?? '').toLowerCase().includes(query);
+            }));
+            const editable = userLevel === 'admin';
+            const headerHtml = state.headers.map((header, index) => `<th class="sheet-col-${index}">${escapeHtml(header || `COLUMN ${index + 1}`)}</th>`).join('');
+            const filterHtml = state.headers.map((_, index) => `<th class="sheet-col-${index}"><input class="sheet-filter-input" value="${escapeHtml(filters[index] || '')}" onchange="updateSheetFilter('${key}', ${index}, this.value)" placeholder="Filter..."></th>`).join('');
+            const bodyHtml = visibleRows.length ? visibleRows.map(item => `<tr>${state.headers.map((_, colIndex) => {
+                const dirty = Object.prototype.hasOwnProperty.call(sheetEdits[key], `${item.rowIndex}:${colIndex}`);
+                return `<td class="sheet-col-${colIndex} ${editable ? 'sheet-editable' : ''} ${dirty ? 'sheet-dirty' : ''}" ${editable ? 'contenteditable="true" spellcheck="false"' : ''} title="${escapeHtml(item.row[colIndex] ?? '')}" onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)">${escapeHtml(item.row[colIndex] ?? '')}</td>`;
+            }).join('')}</tr>`).join('') : `<tr><td colspan="${Math.max(1, state.headers.length)}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
+            table.innerHTML = `<thead><tr>${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
+            document.getElementById(`${key}-sheet-count`).innerText = `${visibleRows.length.toLocaleString()} / ${state.rows.length.toLocaleString()} rekod`;
+        }
+
+        function updateSheetFilter(key, columnIndex, value) { sheetFilters[key][columnIndex] = value; renderSheetTable(key); }
+        function toggleSheetFilters(key) { sheetFilterVisible[key] = !sheetFilterVisible[key]; renderSheetTable(key); }
+
+        function editSheetCell(key, rowIndex, columnIndex, cell) {
+            if (userLevel !== 'admin') return;
+            const state = sheetState(key), value = cell.innerText.trim();
+            if (String(state.rows[rowIndex]?.[columnIndex] ?? '') === value) return;
+            state.rows[rowIndex][columnIndex] = value; sheetEdits[key][`${rowIndex}:${columnIndex}`] = value;
+            cell.classList.add('sheet-dirty'); persistLocalSheetDraft(key); updateSheetSaveStatus(key);
+            if (key === 'kolam') {
+                reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
+                populateDemandFilters(); applyDemandFilters();
+            }
+        }
+
+        function addSheetRow(key) {
+            if (userLevel !== 'admin') return;
+            const state = sheetState(key); if (!state.headers.length) return;
+            const newIndex = state.rows.length; state.rows.push(state.headers.map(() => ''));
+            state.headers.forEach((_, columnIndex) => { sheetEdits[key][`${newIndex}:${columnIndex}`] = ''; });
+            persistLocalSheetDraft(key); renderSheetTable(key); updateSheetSaveStatus(key);
+        }
+
+        function updateSheetSaveStatus(key, text) {
+            const count = Object.keys(sheetEdits[key]).length;
+            document.getElementById(`${key}-sheet-save-status`).innerText = text || (count ? `${count} perubahan belum disimpan` : 'Tiada perubahan');
+        }
+
+        function persistLocalSheetDraft(key) {
+            if (!IS_LOCAL_PREVIEW) return;
+            const state = sheetState(key);
+            localStorage.setItem(`pd-water-prototype-v2-${key}`, JSON.stringify({ headers: state.headers, rows: state.rows, timestamp: Date.now() }));
+        }
+
+        function restoreLocalSheetDraft(key) {
+            if (!IS_LOCAL_PREVIEW) return;
+            try {
+                const draft = JSON.parse(localStorage.getItem(`pd-water-prototype-v2-${key}`) || 'null');
+                if (!draft?.headers?.length || !Array.isArray(draft.rows)) return;
+                if (key === 'kolam') { reservoirHeaders = draft.headers; reservoirRawRows = draft.rows; reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim()); }
+                else { masterlistHeaders = draft.headers; masterlistRawRows = draft.rows; }
+            } catch (_) {}
+        }
+
+        async function saveSheetEdits(key) {
+            if (userLevel !== 'admin') { showToast('Akses edit hanya untuk admin.', true); return; }
+            const entries = Object.entries(sheetEdits[key]);
+            if (!entries.length) { showToast('Tiada perubahan untuk disimpan.'); return; }
+            const state = sheetState(key);
+            if (IS_LOCAL_PREVIEW) {
+                persistLocalSheetDraft(key); sheetEdits[key] = {}; renderSheetTable(key); updateSheetSaveStatus(key, 'Disimpan dalam prototaip lokal'); showToast('Perubahan disimpan secara lokal.'); return;
+            }
+            const updates = entries.map(([address, value]) => { const [rowIndex, columnIndex] = address.split(':').map(Number); return { row: state.headerRow + 1 + rowIndex, column: columnIndex + 1, value }; });
+            updateSheetSaveStatus(key, 'Menyimpan ke Google Sheet...');
+            try {
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'updateSheetCells', sheetName: state.sheetName, updates }) });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error || 'Gagal menyimpan.');
+                sheetEdits[key] = {}; renderSheetTable(key); updateSheetSaveStatus(key, 'Semua perubahan telah disimpan'); showToast('Google Sheet berjaya dikemas kini.');
+            } catch (error) { updateSheetSaveStatus(key, 'Gagal menyimpan'); showToast(error.message || 'Gagal menyimpan.', true); }
+        }
+
+        function showSheetNotice(key, message, type = 'info') {
+            const box = document.getElementById(`${key}-sheet-notice`); if (!box) return;
+            const classes = type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700';
+            box.className = `rounded-lg border p-3 text-xs ${classes}`; box.innerText = message;
         }
 
         async function fetchReservoirData(forceRefresh = false) {
@@ -695,6 +944,10 @@
                 if (!response.ok || !result.success) throw new Error(result.error || 'Data KOLAM DETAILS tidak tersedia.');
                 ingestReservoirPayload(result.data || result.values || result.rows || result, result.headers);
             } catch (error) {
+                if (IS_LOCAL_PREVIEW && !reservoirDataLoaded) {
+                    buildKolamPrototypeFallback();
+                    return;
+                }
                 updateDemandStatus('Data belum tersedia', 'error');
                 const box = document.getElementById('demand-error');
                 box.innerHTML = `<div class="flex gap-3"><i class="fa-solid fa-triangle-exclamation mt-0.5"></i><div><b>Data KOLAM DETAILS tidak dapat dimuatkan.</b><p class="mt-1 text-xs">${escapeHtml(error.message || 'Sila cuba semula atau hubungi pentadbir sistem.')}</p></div></div>`;
@@ -710,13 +963,16 @@
         }
 
         function populateDemandFilters() {
-            const supply = document.getElementById('demand-supply-filter'), status = document.getElementById('demand-status-filter');
-            const currentSupply = supply.value, currentStatus = status.value;
+            const supply = document.getElementById('demand-supply-filter'), secondary = document.getElementById('demand-secondary-filter'), status = document.getElementById('demand-status-filter');
+            const currentSupply = supply.value, currentSecondary = secondary.value, currentStatus = status.value;
             const supplies = [...new Set(reservoirRows.map(r => String(r.supplyFrom || '').trim()).filter(Boolean))].sort();
+            const secondaries = [...new Set(reservoirRows.filter(r => currentSupply === 'ALL' || r.supplyFrom === currentSupply).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
             const statuses = [...new Set(reservoirRows.map(r => String(r.serviceStatus || r.statusSt || '').trim()).filter(Boolean))].sort();
             supply.innerHTML = '<option value="ALL">Semua Supply From</option>' + supplies.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            secondary.innerHTML = '<option value="ALL">Semua Secondary Supply</option>' + secondaries.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
             status.innerHTML = '<option value="ALL">Semua Status</option>' + statuses.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
             if (supplies.includes(currentSupply)) supply.value = currentSupply;
+            if (secondaries.includes(currentSecondary)) secondary.value = currentSecondary;
             if (statuses.includes(currentStatus)) status.value = currentStatus;
         }
 
@@ -728,13 +984,22 @@
             return 'unknown';
         }
 
+        function onDemandSupplyChange() {
+            const selectedSupply = document.getElementById('demand-supply-filter').value;
+            const secondary = document.getElementById('demand-secondary-filter');
+            const values = [...new Set(reservoirRows.filter(r => selectedSupply === 'ALL' || r.supplyFrom === selectedSupply).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
+            secondary.innerHTML = '<option value="ALL">Semua Secondary Supply</option>' + values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            applyDemandFilters();
+        }
+
         function applyDemandFilters() {
             const search = String(document.getElementById('demand-search')?.value || '').toLowerCase().trim();
             const supply = document.getElementById('demand-supply-filter')?.value || 'ALL';
+            const secondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
             const status = document.getElementById('demand-status-filter')?.value || 'ALL';
             filteredReservoirRows = reservoirRows.filter(r => {
                 const haystack = [r.name,r.supplyFrom,r.secondarySupply,r.tagging,r.mukim,r.lot,r.titleNo].join(' ').toLowerCase();
-                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status);
+                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || String(r.serviceStatus || r.statusSt) === status);
             });
             renderDemandKpis(); renderDemandTable(); renderDemandCharts(); renderDemandMap();
         }
@@ -799,6 +1064,46 @@
             });
             document.getElementById('demand-map-count').innerText = `${validCount.toLocaleString()} lokasi dipaparkan`;
             if (validCount && demandMarkerLayer.getBounds().isValid()) demandMap.fitBounds(demandMarkerLayer.getBounds(), { padding: [35,35], maxZoom: 15 });
+            renderDemandKml();
+        }
+
+        async function renderDemandKml() {
+            if (!demandMap) return;
+            if (demandKmlLayer) demandMap.removeLayer(demandKmlLayer);
+            demandKmlLayer = L.featureGroup().addTo(demandMap);
+            const manifest = window.KML_KOLAM_MANIFEST || [];
+            const selectedSupply = document.getElementById('demand-supply-filter')?.value || 'ALL';
+            const selectedSecondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
+            const normalizeName = value => normalizeHeader(value).replace(/\bSUPPLY\b/g, '').trim();
+            const supplyKey = normalizeName(selectedSupply), secondaryKey = normalizeName(selectedSecondary);
+            const visible = manifest.filter(item => {
+                const itemSupply = normalizeName(item.supply), itemName = normalizeName(item.name);
+                const supplyMatch = selectedSupply === 'ALL' || supplyKey.includes(itemSupply) || itemSupply.includes(supplyKey);
+                const secondaryMatch = selectedSecondary === 'ALL' || secondaryKey.includes(itemName) || itemName.includes(secondaryKey);
+                return supplyMatch && secondaryMatch;
+            });
+            const colours = { 'BUKIT KUNYIT': '#f59e0b', 'BUKIT TUNGGAL': '#8b5cf6', 'LOJI LINGGI': '#0284c7' };
+            await Promise.all(visible.map(async item => {
+                try {
+                    let text = kmlTextCache.get(item.path);
+                    if (!text) { const response = await fetch(encodeURI(item.path)); if (!response.ok) throw new Error(); text = await response.text(); kmlTextCache.set(item.path, text); }
+                    const xml = new DOMParser().parseFromString(text, 'text/xml');
+                    const colour = colours[normalizeHeader(item.supply)] || '#0f766e';
+                    for (const node of xml.getElementsByTagName('coordinates')) {
+                        const points = node.textContent.trim().split(/\s+/).map(part => { const values = part.split(',').map(Number); return values.length >= 2 && Number.isFinite(values[0]) && Number.isFinite(values[1]) ? [values[1], values[0]] : null; }).filter(Boolean);
+                        if (points.length < 2) continue;
+                        const isPolygon = points.length >= 3 && points[0][0] === points[points.length - 1][0] && points[0][1] === points[points.length - 1][1];
+                        const layer = isPolygon ? L.polygon(points, { color: colour, weight: 2, fillColor: colour, fillOpacity: .12 }) : L.polyline(points, { color: colour, weight: 3, opacity: .75 });
+                        layer.bindTooltip(`${item.name} · ${item.supply}`, { sticky: true });
+                        layer.bindPopup(`<div class="p-1"><p class="text-[10px] uppercase font-bold text-slate-500">Sub KML Kolam</p><h4 class="font-black text-slate-900 mt-1">${escapeHtml(item.name)}</h4><p class="text-xs text-slate-600 mt-1"><b>Supply From:</b> ${escapeHtml(item.supply)}</p></div>`);
+                        layer.addTo(demandKmlLayer);
+                    }
+                } catch (_) {}
+            }));
+            const markerBounds = demandMarkerLayer?.getBounds?.(); const kmlBounds = demandKmlLayer.getBounds();
+            if ((!markerBounds || !markerBounds.isValid()) && kmlBounds.isValid()) demandMap.fitBounds(kmlBounds, { padding: [30,30], maxZoom: 13 });
+            const markerText = document.getElementById('demand-map-count');
+            if (markerText) markerText.innerText = `${filteredReservoirRows.filter(r => r.lat && r.long).length.toLocaleString()} lokasi · ${visible.length.toLocaleString()} sub KML`;
         }
 
         function openReservoirDetail(id) {

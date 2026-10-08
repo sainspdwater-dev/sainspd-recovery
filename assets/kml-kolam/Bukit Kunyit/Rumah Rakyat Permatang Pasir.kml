@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Rumah_Rakyat_Permatang_Pasir</name>
+  <Placemark id="Rumah_Rakyat_Permatang_Pasir.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>102.020027644971,2.46480548165541 102.019314972782,2.46462731360827 102.018928942013,2.46444914556114 102.018958636688,2.46284563313695 102.019047720711,2.46240021301911 102.02100756923,2.46237051834459 102.021542073371,2.46284563313695 102.021423294673,2.46418189349044 102.021883562128,2.4646570082828 102.020027644971,2.46480548165541</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

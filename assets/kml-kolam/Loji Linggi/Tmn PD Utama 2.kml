@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_PD_Utama_2_</name>
+  <Placemark id="Tmn_PD_Utama_2_.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.827706226011,2.5212235051297 101.827602294651,2.51996148146248 101.827513210627,2.51782346489685 101.827483515952,2.51715533472009 101.82858221891,2.51708109803378 101.830126341985,2.51764529684971 101.831432907664,2.51889247317967 101.832576152633,2.51979816075261 101.832412831923,2.52028812288223 101.828611913584,2.52123835246696 101.827973478082,2.52131258915327 101.827706226011,2.5212235051297</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>Tmn_Lukut_Prima</name>
+  <Placemark id="Tmn_Lukut_Prima.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.809826101763,2.56253455811973 101.809035481054,2.56166598888995 101.80894639703,2.56123170427507 101.809904050284,2.55980635989801 101.81030492839,2.55933866877428 101.812175692885,2.56051903208654 101.812532028979,2.56084196167196 101.81087283904,2.562066866996 101.810238115372,2.562478880605 101.809826101763,2.56253455811973</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

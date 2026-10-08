@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>PPR_Desa_Tanjung</name>
+  <Placemark id="PPR_Desa_Tanjung.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.781289737898,2.65166169344418 101.782922944997,2.65065207451041 101.783568804168,2.64980577628651 101.783190197068,2.64930839048825 101.782937792334,2.6491747644529 101.782655692926,2.64869964966054 101.781512447957,2.64924900113921 101.781015062159,2.64960533723348 101.781230348549,2.65042194078286 101.781475329614,2.65088220823796 101.780881436123,2.65126823900675 101.781156111863,2.65169881178733 101.781289737898,2.65166169344418</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

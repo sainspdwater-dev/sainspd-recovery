@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="Bandar_Spring_Hill__new_" id="Bandar_Spring_Hill__new_">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="timestamp" type="string"></SimpleField>
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+	<SimpleField name="altitudeMode" type="string"></SimpleField>
+	<SimpleField name="tessellate" type="int"></SimpleField>
+	<SimpleField name="extrude" type="int"></SimpleField>
+	<SimpleField name="visibility" type="int"></SimpleField>
+	<SimpleField name="drawOrder" type="int"></SimpleField>
+	<SimpleField name="icon" type="string"></SimpleField>
+</Schema>
+<Folder><name>Bandar_Spring_Hill__new_</name>
+  <Placemark id="Bandar_Spring_Hill__new_.1">
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#Bandar_Spring_Hill__new_">
+		<SimpleData name="id">Bandar_Spring_Hill__new_.1</SimpleData>
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>101.848336382784,2.62284073023986 101.838804392262,2.62310798231056 101.83550828339,2.62239531012203 101.836399123626,2.6206136296507 101.837557215932,2.61918828527364 101.837913552027,2.61722843675518 101.837022711791,2.61526858823671 101.83648820765,2.61321965569469 101.836399123626,2.60992354682273 101.836220955579,2.60627110185651 101.836131871555,2.60244048884315 101.836131871555,2.5994116320419 101.838269888121,2.597540867547 101.842456837229,2.59522468293428 101.847890962666,2.59477926281644 101.850830735444,2.59620460719351 101.851276155562,2.59745178352344 101.852523331892,2.5983426237591 101.853592340174,2.60065880837183 101.852077911774,2.60297499298455 101.850207147279,2.60511300955015 101.849049054972,2.60698377404504 101.850919819467,2.60832003439854 101.85198882775,2.61108163912909 101.85323600408,2.61419957995392 101.852879667986,2.62025729355643 101.851721575679,2.62248439414559 101.848336382784,2.62284073023986</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>
