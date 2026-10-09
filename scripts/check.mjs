@@ -22,9 +22,11 @@ new Function(prototypeDataSource);
 const prototypeContext = { window: {} };
 new Function('window', prototypeDataSource)(prototypeContext.window);
 const prototypeData = prototypeContext.window.PROTOTYPE_SHEET_DATA;
-if (prototypeData?.kolam?.rows?.length !== 74) throw new Error(`Expected 74 KOLAM DETAILS rows, found ${prototypeData?.kolam?.rows?.length || 0}`);
+if ((prototypeData?.kolam?.rows?.length || 0) < 75) throw new Error(`Expected at least 75 KOLAM DETAILS rows, found ${prototypeData?.kolam?.rows?.length || 0}`);
 if (!prototypeData?.kolam?.headers?.includes('CAPACITY ST (ML)')) throw new Error('Expected updated CAPACITY ST (ML) header');
 if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 548 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
+const bukitTunggalFamily = prototypeData.kolam.rows.filter(row => ['BUKIT TUNGGAL', 'Tmn Desa PD 1', 'Tmn Desa PD 2'].includes(String(row[0] || '').trim()));
+if (bukitTunggalFamily.length !== 3) throw new Error('Expected BUKIT TUNGGAL parent with Tmn Desa PD 1 and Tmn Desa PD 2');
 
 async function countKml(directory) {
   let count = 0;
