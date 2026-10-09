@@ -1344,12 +1344,11 @@
         function renderDemandKpis() {
             const metricRows = demandMetricRows();
             const metricTotal = (key) => metricRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
-            const visibleTotal = (key) => filteredReservoirRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
             document.getElementById('d-kpi-count').innerText = filteredReservoirRows.length.toLocaleString();
             document.getElementById('d-kpi-day').innerText = `${formatMetric(metricTotal('demandDay'))} m³`;
             document.getElementById('d-kpi-month').innerText = `${formatMetric(metricTotal('demandMonth'))} m³`;
             document.getElementById('d-kpi-connection').innerText = formatMetric(metricTotal('connections'), 0);
-            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(visibleTotal('serviceCapacityMl'))} ML`;
+            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(metricTotal('serviceCapacityMl'))} ML`;
         }
 
         function statusBadge(record) {

@@ -35,6 +35,24 @@ if (supplyFilterValues.has('SAWAH RAJA')) throw new Error('SAWAH RAJA should no 
 
 const kolamHeaderIndex = Object.fromEntries(prototypeData.kolam.headers.map((header, index) => [header, index]));
 const numberFromSheet = value => Number(String(value || '').replace(/,/g, '')) || 0;
+const bukitTunggalParent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'BUKIT TUNGGAL');
+if (!bukitTunggalParent) throw new Error('Expected BUKIT TUNGGAL balancing row from Google Sheet row 2');
+const bukitTunggalExpected = {
+  demandMonth: 35795.1,
+  demandDay: 1193.17,
+  connections: 1511,
+  serviceCapacityMl: 6.83,
+};
+const bukitTunggalActual = {
+  demandMonth: numberFromSheet(bukitTunggalParent[kolamHeaderIndex['DEMAND PER MONTH (M3)']]),
+  demandDay: numberFromSheet(bukitTunggalParent[kolamHeaderIndex['DEMAND PER DAY (M3)']]),
+  connections: numberFromSheet(bukitTunggalParent[kolamHeaderIndex['TOTAL CONNECTION']]),
+  serviceCapacityMl: numberFromSheet(bukitTunggalParent[kolamHeaderIndex['SERVICE RESERVOIR CAPACITY (ML)']]),
+};
+for (const [key, expected] of Object.entries(bukitTunggalExpected)) {
+  if (bukitTunggalActual[key] !== expected) throw new Error(`Expected BUKIT TUNGGAL ${key} ${expected} from balancing row, received ${bukitTunggalActual[key]}`);
+}
+if (!html.includes("formatMetric(metricTotal('serviceCapacityMl'))")) throw new Error('Expected capacity KPI to use hierarchy balancing rows');
 const sirusa2Rows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['SUPPLY FROM']] || '').trim() === 'SIRUSA 2');
 const sirusa2Parent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'SIRUSA 2');
 if (sirusa2Rows.length !== 5 || !sirusa2Parent) throw new Error('Expected SIRUSA 2 parent and four service-level rows');
