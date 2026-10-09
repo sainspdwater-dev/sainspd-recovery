@@ -4,7 +4,7 @@ import path from 'node:path';
 const html = await readFile('index_dashboard.html', 'utf8');
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(value => value.trim());
 for (const source of scripts) new Function(source);
-for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveReservoirDetails', 'handleReservoirKmlUpload', 'openSidebarFromEdge', 'canonicalStatusValue', 'isReservoirFormulaHeader', 'reservoir-detail-footer']) {
+for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveReservoirDetails', 'handleReservoirKmlUpload', 'openSidebarFromEdge', 'canonicalStatusValue', 'isReservoirFormulaHeader', 'isReservoirDropdownHeader', 'setSuctionTankPresence', 'reservoir-detail-footer']) {
   if (!html.includes(required)) throw new Error(`Missing requested dashboard feature: ${required}`);
 }
 const workerSource = await readFile('cloudflare-worker-kolam-snippet.js', 'utf8');
@@ -27,6 +27,7 @@ if (!prototypeData?.kolam?.headers?.includes('CAPACITY ST (ML)')) throw new Erro
 if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 548 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
 const bukitTunggalFamily = prototypeData.kolam.rows.filter(row => ['BUKIT TUNGGAL', 'Tmn Desa PD 1', 'Tmn Desa PD 2'].includes(String(row[0] || '').trim()));
 if (bukitTunggalFamily.length !== 3) throw new Error('Expected BUKIT TUNGGAL parent with Tmn Desa PD 1 and Tmn Desa PD 2');
+if (!bukitTunggalFamily.every(row => String(row[1] || '').trim() === 'BUKIT TUNGGAL')) throw new Error('Expected current BUKIT TUNGGAL supply mapping from Google Sheet');
 
 async function countKml(directory) {
   let count = 0;

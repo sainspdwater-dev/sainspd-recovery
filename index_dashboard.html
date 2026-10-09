@@ -53,9 +53,11 @@
         .sheet-filter-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
         .demand-view-tab.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, .22); }
         .map-layer-toggle input { accent-color: #2563eb; width: 1rem; height: 1rem; }
-        .detail-field input { width: 100%; margin-top: .3rem; padding: .55rem .65rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: rgba(255,255,255,.88); color: #0f172a; font-size: .8rem; font-weight: 600; outline: none; }
-        .detail-field input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
-        .detail-field input:read-only { border-color: transparent; background: transparent; padding-left: 0; padding-right: 0; }
+        .detail-field input, .detail-field select { width: 100%; margin-top: .3rem; padding: .55rem .65rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: rgba(255,255,255,.88); color: #0f172a; font-size: .8rem; font-weight: 600; outline: none; }
+        .detail-field input:focus, .detail-field select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+        .detail-field input:read-only, .detail-field select:disabled { border-color: transparent; background: transparent; padding-left: 0; padding-right: 0; opacity: 1; }
+        .sheet-cell-select { width: 100%; min-width: 135px; padding: .35rem 1.7rem .35rem .45rem; border: 1px solid #bfdbfe; border-radius: .45rem; background: #eff6ff; color: #0f172a; font-size: 11px; font-weight: 600; outline: none; }
+        .sheet-cell-select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.14); }
         #sidebar-hover-rail { display: none; }
         @media (min-width: 768px) {
             #app-sidebar, #app-shell { transition: transform .3s ease, padding-left .3s ease; }
@@ -796,6 +798,40 @@
 
         function isReservoirFormulaHeader(value) { return normalizeHeader(value) === 'DEMAND PER DAY M3'; }
 
+        const KOLAM_DROPDOWN_HEADERS = new Set(['SUPPLY FROM', 'SECONDARY SUPPLY', 'SERVICE RESERVOIR STATUS', 'STATUS ST']);
+
+        function isReservoirDropdownHeader(value) { return KOLAM_DROPDOWN_HEADERS.has(normalizeHeader(value)); }
+
+        function reservoirDropdownDisplayValue(label, value) {
+            const key = normalizeHeader(label), text = String(value ?? '').trim();
+            return /^(SERVICE RESERVOIR STATUS|STATUS ST)$/.test(key) ? statusDisplayLabel(text) : text;
+        }
+
+        function reservoirDropdownOptions(label, currentValue = '') {
+            const key = normalizeHeader(label), columnIndex = reservoirHeaders.findIndex(header => normalizeHeader(header) === key);
+            const seen = new Set(), values = [];
+            const add = value => {
+                const display = reservoirDropdownDisplayValue(label, value); if (!display) return;
+                const identity = /STATUS/.test(key) ? canonicalStatusValue(display) : display.toUpperCase();
+                if (seen.has(identity)) return; seen.add(identity); values.push(display);
+            };
+            if (columnIndex >= 0) reservoirRawRows.forEach(row => add(row[columnIndex]));
+            if (/^(SERVICE RESERVOIR STATUS|STATUS ST)$/.test(key)) ['Active', 'Inactive', 'Abandoned', 'Demolished'].forEach(add);
+            add(currentValue);
+            return values.sort((a, b) => a.localeCompare(b, 'ms'));
+        }
+
+        function reservoirDropdownOptionsHtml(label, currentValue = '') {
+            const selected = reservoirDropdownDisplayValue(label, currentValue);
+            return `<option value="">- Tiada pilihan -</option>` + reservoirDropdownOptions(label, currentValue).map(value => `<option value="${escapeHtml(value)}" ${canonicalStatusValue(value) === canonicalStatusValue(selected) ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('');
+        }
+
+        function reservoirValuesEqual(header, left, right) {
+            const key = normalizeHeader(header);
+            if (/^(SERVICE RESERVOIR STATUS|STATUS ST)$/.test(key)) return canonicalStatusValue(left) === canonicalStatusValue(right);
+            return String(left ?? '') === String(right ?? '');
+        }
+
         function canonicalStatusValue(value) { return String(value || '').trim().toUpperCase(); }
 
         function statusDisplayLabel(value) {
@@ -1020,6 +1056,8 @@
                 const dirty = Object.prototype.hasOwnProperty.call(sheetEdits[key], `${item.rowIndex}:${colIndex}`);
                 const formulaLocked = key === 'kolam' && isReservoirFormulaHeader(state.headers[colIndex]);
                 const cellEditable = editable && !formulaLocked;
+                const dropdown = key === 'kolam' && cellEditable && isReservoirDropdownHeader(state.headers[colIndex]);
+                if (dropdown) return `<td class="sheet-col-${colIndex} sheet-dropdown-cell ${dirty ? 'sheet-dirty' : ''}" title="Pilihan diselaraskan daripada Google Sheet"><select class="sheet-cell-select" aria-label="${escapeHtml(state.headers[colIndex])}" onchange="editSheetDropdown('${key}', ${item.rowIndex}, ${colIndex}, this)">${reservoirDropdownOptionsHtml(state.headers[colIndex], item.row[colIndex] ?? '')}</select></td>`;
                 return `<td class="sheet-col-${colIndex} ${cellEditable ? 'sheet-editable' : ''} ${formulaLocked ? 'sheet-formula-locked' : ''} ${dirty ? 'sheet-dirty' : ''}" ${cellEditable ? 'contenteditable="true" spellcheck="false"' : ''} title="${formulaLocked ? 'Formula Google Sheet dikunci' : escapeHtml(item.row[colIndex] ?? '')}" ${cellEditable ? `onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)"` : ''}>${escapeHtml(item.row[colIndex] ?? '')}${formulaLocked ? ' <i class="fa-solid fa-lock text-[9px] text-slate-400 ml-1"></i>' : ''}</td>`;
             }).join('')}</tr>`).join('') : `<tr><td colspan="${Math.max(1, state.headers.length)}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
             table.innerHTML = `<thead><tr>${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
@@ -1032,10 +1070,19 @@
         function editSheetCell(key, rowIndex, columnIndex, cell) {
             if (userLevel !== 'admin') return;
             const state = sheetState(key); if (key === 'kolam' && isReservoirFormulaHeader(state.headers[columnIndex])) return;
-            const value = cell.innerText.trim();
-            if (String(state.rows[rowIndex]?.[columnIndex] ?? '') === value) return;
+            updateSheetCellValue(key, rowIndex, columnIndex, cell.innerText.trim(), cell);
+        }
+
+        function editSheetDropdown(key, rowIndex, columnIndex, select) {
+            if (userLevel !== 'admin') return;
+            updateSheetCellValue(key, rowIndex, columnIndex, select.value, select.closest('td'));
+        }
+
+        function updateSheetCellValue(key, rowIndex, columnIndex, value, cell) {
+            const state = sheetState(key);
+            if (key === 'kolam' ? reservoirValuesEqual(state.headers[columnIndex], state.rows[rowIndex]?.[columnIndex], value) : String(state.rows[rowIndex]?.[columnIndex] ?? '') === value) return;
             state.rows[rowIndex][columnIndex] = value; sheetEdits[key][`${rowIndex}:${columnIndex}`] = value;
-            cell.classList.add('sheet-dirty'); persistLocalSheetDraft(key); updateSheetSaveStatus(key);
+            if (cell) cell.classList.add('sheet-dirty'); persistLocalSheetDraft(key); updateSheetSaveStatus(key);
             if (key === 'kolam') {
                 reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
                 populateDemandFilters(); applyDemandFilters();
@@ -1066,6 +1113,10 @@
             try {
                 const draft = JSON.parse(localStorage.getItem(`pd-water-prototype-v3-${key}`) || 'null');
                 if (!draft?.headers?.length || !Array.isArray(draft.rows)) return;
+                const snapshotTime = Date.parse(window.PROTOTYPE_SHEET_DATA?.syncedAt || '') || 0;
+                if (snapshotTime && snapshotTime > Number(draft.timestamp || 0)) {
+                    localStorage.removeItem(`pd-water-prototype-v3-${key}`); return;
+                }
                 if (key === 'kolam') {
                     reservoirHeaders = reservoirHeaders.length === draft.headers.length ? reservoirHeaders : draft.headers;
                     reservoirRawRows = draft.rows; reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
@@ -1421,17 +1472,41 @@
             return 'general';
         }
 
-        function renderReservoirDetailSection(title, icon, colour, items, editable) {
+        function renderReservoirDetailField(item, editable, extraAttributes = '') {
+            const formulaLocked = isReservoirFormulaHeader(item.label), canEdit = editable && !formulaLocked;
+            const label = `<span class="block text-[10px] uppercase tracking-wide font-bold opacity-70">${escapeHtml(item.label)}${formulaLocked ? ' <i class="fa-solid fa-lock ml-1" title="Formula Google Sheet dikunci"></i>' : ''}</span>`;
+            const common = `data-reservoir-column="${item.index}" data-reservoir-header="${escapeHtml(item.label)}" data-formula-locked="${formulaLocked}" ${extraAttributes}`;
+            if (isReservoirDropdownHeader(item.label)) {
+                return `<label class="detail-field block rounded-xl border border-white/80 bg-white/65 p-3">${label}<select ${common} ${canEdit ? '' : 'disabled'}>${reservoirDropdownOptionsHtml(item.label, item.value)}</select></label>`;
+            }
+            return `<label class="detail-field block rounded-xl border border-white/80 bg-white/65 p-3">${label}<input ${common} value="${escapeHtml(item.value)}" ${canEdit ? '' : 'readonly'} ${formulaLocked ? 'title="Nilai formula Google Sheet dikunci"' : ''}></label>`;
+        }
+
+        function renderReservoirDetailSection(title, icon, colour, items, editable, options = {}) {
             const tones = {
                 green: 'border-emerald-200 bg-emerald-50/75 text-emerald-800',
                 blue: 'border-blue-200 bg-blue-50/75 text-blue-800',
                 red: 'border-rose-200 bg-rose-50/75 text-rose-800'
             };
-            const fields = items.map(item => {
-                const formulaLocked = isReservoirFormulaHeader(item.label), canEdit = editable && !formulaLocked;
-                return `<label class="detail-field block rounded-xl border border-white/80 bg-white/65 p-3"><span class="block text-[10px] uppercase tracking-wide font-bold opacity-70">${escapeHtml(item.label)}${formulaLocked ? ' <i class="fa-solid fa-lock ml-1" title="Formula Google Sheet dikunci"></i>' : ''}</span><input data-reservoir-column="${item.index}" value="${escapeHtml(item.value)}" ${canEdit ? '' : 'readonly'} ${formulaLocked ? 'title="Nilai formula Google Sheet dikunci"' : ''}></label>`;
-            }).join('');
-            return `<section class="rounded-2xl border p-4 ${tones[colour]}"><div class="flex items-center gap-2 mb-3"><span class="w-8 h-8 rounded-lg bg-white/80 grid place-items-center"><i class="fa-solid ${icon}"></i></span><div><h3 class="font-black">${title}</h3><p class="text-[10px] opacity-70">${editable ? 'Boleh diedit oleh pentadbir' : 'Paparan sahaja'}</p></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3">${fields || '<p class="text-xs opacity-70">Tiada maklumat.</p>'}</div></section>`;
+            const suction = Boolean(options.suction), present = Boolean(options.present);
+            const fields = items.map(item => renderReservoirDetailField(item, editable, suction ? 'data-suction-field="true"' : '')).join('');
+            const control = suction ? `<div class="ml-auto flex flex-col items-end gap-1"><label class="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-3 py-2 text-xs font-black text-rose-700"><input id="suction-tank-toggle" type="checkbox" class="w-4 h-4 accent-rose-600" ${present ? 'checked' : ''} ${editable ? '' : 'disabled'} onchange="setSuctionTankPresence(this.checked, true)"><span>Ada Suction Tank</span></label><span id="suction-tank-presence-label" class="text-[10px] font-bold opacity-70">${present ? 'Ada Suction Tank' : 'Tiada Suction Tank'}</span></div>` : '';
+            return `<section ${suction ? 'id="suction-tank-section"' : ''} class="rounded-2xl border p-4 ${tones[colour]}"><div class="flex items-center gap-2 mb-3"><span class="w-8 h-8 rounded-lg bg-white/80 grid place-items-center"><i class="fa-solid ${icon}"></i></span><div><h3 class="font-black">${title}</h3><p class="text-[10px] opacity-70">${editable ? 'Boleh diedit oleh pentadbir' : 'Paparan sahaja'}</p></div>${control}</div><div id="${suction ? 'suction-tank-fields' : ''}" class="grid grid-cols-1 md:grid-cols-2 gap-3 transition-opacity">${fields || '<p class="text-xs opacity-70">Tiada maklumat.</p>'}</div></section>`;
+        }
+
+        function setSuctionTankPresence(enabled, userTriggered = false) {
+            const fields = [...document.querySelectorAll('#suction-tank-fields [data-suction-field]')];
+            const fieldsPanel = document.getElementById('suction-tank-fields'), label = document.getElementById('suction-tank-presence-label');
+            if (label) label.innerText = enabled ? 'Ada Suction Tank' : 'Tiada Suction Tank';
+            if (fieldsPanel) fieldsPanel.classList.toggle('opacity-40', !enabled);
+            fields.forEach(control => {
+                if (!enabled) control.value = '';
+                control.disabled = !enabled || userLevel !== 'admin' || control.dataset.formulaLocked === 'true';
+            });
+            if (enabled && userTriggered) {
+                const tankName = fields.find(control => normalizeHeader(control.dataset.reservoirHeader) === 'SUCTION TANK');
+                if (tankName && !String(tankName.value || '').trim()) tankName.value = document.getElementById('reservoir-detail-title')?.innerText.trim() || 'Ada';
+            }
         }
 
         function openReservoirDetail(id) {
@@ -1440,10 +1515,12 @@
             const editable = userLevel === 'admin', img = imageUrl(record.image);
             const groups = { general: [], service: [], suction: [] };
             record.headers.forEach((label, index) => groups[reservoirDetailGroup(label, index)].push({ label, index, value: record.values[index] ?? '' }));
+            const hasSuctionTank = groups.suction.some(item => String(item.value ?? '').trim());
             const override = reservoirKmlOverrides[canonicalReservoirName(record.name)];
             const uploadPanel = `<section class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="font-black text-slate-800"><i class="fa-solid fa-draw-polygon text-violet-600 mr-2"></i>KML Polygon Kolam</h3><p id="reservoir-kml-status" class="text-xs text-slate-500 mt-1">${override ? `Menggunakan fail baharu: ${escapeHtml(override.fileName || 'KML tersimpan')}` : 'Menggunakan fail KML asal dalam sistem.'}</p></div>${editable ? `<label class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold cursor-pointer"><i class="fa-solid fa-cloud-arrow-up"></i> MUAT NAIK KML<input type="file" accept=".kml,application/vnd.google-earth.kml+xml" class="hidden" onchange="handleReservoirKmlUpload(event, ${record._id})"></label>` : '<span class="text-[10px] font-bold rounded-full bg-slate-200 text-slate-600 px-3 py-1.5">ADMIN SAHAJA</span>'}</div><p class="text-[10px] text-slate-400 mt-3">Fail KML baharu akan menggantikan polygon kolam ini pada peta selepas disahkan.</p></section>`;
             const content = document.getElementById('reservoir-detail-content');
-            content.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">${img ? `<aside><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></aside>` : '<aside class="hidden lg:block"></aside>'}<div class="space-y-4">${renderReservoirDetailSection('Maklumat Am', 'fa-circle-info', 'green', groups.general, editable)}${renderReservoirDetailSection('Kolam Servis', 'fa-water', 'blue', groups.service, editable)}${renderReservoirDetailSection('Suction Tank', 'fa-pump-soap', 'red', groups.suction, editable)}${uploadPanel}</div></div>`;
+            content.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">${img ? `<aside><img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(record.name)}" class="w-full aspect-[4/3] object-cover rounded-xl bg-slate-100 border" onerror="this.parentElement.style.display='none'"><div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-900"><i class="fa-solid fa-location-dot mr-1"></i>${record.lat && record.long ? `${record.lat}, ${record.long}` : 'Koordinat tidak tersedia'}</div></aside>` : '<aside class="hidden lg:block"></aside>'}<div class="space-y-4">${renderReservoirDetailSection('Maklumat Am', 'fa-circle-info', 'green', groups.general, editable)}${renderReservoirDetailSection('Kolam Servis', 'fa-water', 'blue', groups.service, editable)}${renderReservoirDetailSection('Suction Tank', 'fa-pump-soap', 'red', groups.suction, editable, { suction: true, present: hasSuctionTank })}${uploadPanel}</div></div>`;
+            setSuctionTankPresence(hasSuctionTank, false);
             const footer = document.getElementById('reservoir-detail-footer');
             footer.innerHTML = editable ? `<button onclick="closeReservoirDetail()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="reservoir-detail-save" onclick="saveReservoirDetails(${record._id})" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>SIMPAN KE DATABASE</button>` : '<span class="text-xs text-slate-500">Paparan sahaja</span>';
             footer.classList.remove('hidden'); footer.classList.add('flex');
@@ -1458,7 +1535,7 @@
             const inputs = [...document.querySelectorAll('#reservoir-detail-content [data-reservoir-column]')];
             inputs.forEach(input => {
                 const column = Number(input.dataset.reservoirColumn), value = input.value;
-                if (String(reservoirRawRows[id]?.[column] ?? '') === value) return;
+                if (reservoirValuesEqual(record.headers[column], reservoirRawRows[id]?.[column], value)) return;
                 reservoirRawRows[id][column] = value; sheetEdits.kolam[`${id}:${column}`] = value;
             });
             if (!Object.keys(sheetEdits.kolam).length) { showToast('Tiada perubahan untuk disimpan.'); return; }
