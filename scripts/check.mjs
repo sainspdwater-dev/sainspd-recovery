@@ -28,6 +28,10 @@ if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 5
 const bukitTunggalFamily = prototypeData.kolam.rows.filter(row => ['BUKIT TUNGGAL', 'Tmn Desa PD 1', 'Tmn Desa PD 2'].includes(String(row[0] || '').trim()));
 if (bukitTunggalFamily.length !== 3) throw new Error('Expected BUKIT TUNGGAL parent with Tmn Desa PD 1 and Tmn Desa PD 2');
 if (!bukitTunggalFamily.every(row => String(row[1] || '').trim() === 'BUKIT TUNGGAL')) throw new Error('Expected current BUKIT TUNGGAL supply mapping from Google Sheet');
+const bukitKunyitParent = prototypeData.kolam.rows.find(row => String(row[0] || '').trim() === 'BUKIT KUNYIT');
+if (String(bukitKunyitParent?.[1] || '').trim() !== 'BUKIT KUNYIT') throw new Error('Expected BUKIT KUNYIT to be its own supply parent');
+const supplyFilterValues = new Set(prototypeData.kolam.rows.map(row => String(row[1] || '').trim()).filter(Boolean));
+if (supplyFilterValues.has('SAWAH RAJA')) throw new Error('SAWAH RAJA should no longer appear in the Supply From filter');
 
 const kolamHeaderIndex = Object.fromEntries(prototypeData.kolam.headers.map((header, index) => [header, index]));
 const numberFromSheet = value => Number(String(value || '').replace(/,/g, '')) || 0;
