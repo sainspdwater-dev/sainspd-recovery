@@ -414,8 +414,6 @@
                 <select id="demand-reservoir-filter" onchange="applyDemandFilters()" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white"><option value="ALL">Semua Kolam</option></select>
             </div>
 
-            <div id="demand-hierarchy" class="hidden rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50 p-4" data-html2canvas-ignore="true"></div>
-
             <div id="demand-error" class="hidden rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"></div>
 
             <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
@@ -1192,7 +1190,7 @@
             const supply = document.getElementById('demand-supply-filter'), secondary = document.getElementById('demand-secondary-filter'), status = document.getElementById('demand-status-filter');
             const currentSupply = supply.value, currentSecondary = secondary.value, currentStatus = canonicalStatusValue(status.value);
             const supplies = [...new Set(reservoirRows.map(r => String(r.supplyFrom || '').trim()).filter(Boolean))].sort();
-            const secondaries = [...new Set(reservoirRows.filter(r => matchesSupplySelection(r, currentSupply)).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
+            const secondaries = [...new Set(reservoirRows.filter(r => currentSupply === 'ALL' || r.supplyFrom === currentSupply).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
             const statuses = [...new Set(reservoirRows.map(r => canonicalStatusValue(r.serviceStatus || r.statusSt)).filter(Boolean))].sort();
             supply.innerHTML = '<option value="ALL">Semua Supply From</option>' + supplies.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
             secondary.innerHTML = '<option value="ALL">Semua Secondary Supply</option>' + secondaries.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
@@ -1215,27 +1213,10 @@
             return Number.isFinite(record.lat) && Number.isFinite(record.long) && Math.abs(record.lat) <= 90 && Math.abs(record.long) <= 180 && Boolean(record.lat && record.long);
         }
 
-        function matchesSupplySelection(record, selectedSupply) {
-            if (selectedSupply === 'ALL') return true;
-            const selected = canonicalReservoirName(selectedSupply);
-            return canonicalReservoirName(record.supplyFrom) === selected || canonicalReservoirName(record.name) === selected;
-        }
-
-        function renderDemandHierarchy(selectedSupply) {
-            const panel = document.getElementById('demand-hierarchy'); if (!panel) return;
-            if (selectedSupply === 'ALL') { panel.classList.add('hidden'); panel.innerHTML = ''; return; }
-            const selected = canonicalReservoirName(selectedSupply);
-            const parent = reservoirRows.find(record => canonicalReservoirName(record.name) === selected);
-            const children = reservoirRows.filter(record => canonicalReservoirName(record.supplyFrom) === selected && canonicalReservoirName(record.name) !== selected);
-            if (!parent || !children.length) { panel.classList.add('hidden'); panel.innerHTML = ''; return; }
-            panel.innerHTML = `<div class="flex flex-col lg:flex-row lg:items-center gap-4"><div class="flex items-center gap-3 lg:min-w-[260px]"><span class="w-11 h-11 rounded-xl bg-blue-600 text-white grid place-items-center shrink-0">${TANK_ICON_SVG}</span><div><p class="text-[10px] uppercase tracking-wider font-bold text-blue-600">Kolam Induk</p><button onclick="openReservoirDetail(${parent._id})" class="text-left font-black text-slate-900 hover:text-blue-700">${escapeHtml(parent.name)}</button></div></div><i class="fa-solid fa-arrow-right text-blue-400 hidden lg:block"></i><div class="flex flex-wrap gap-2">${children.map(child => `<button onclick="openReservoirDetail(${child._id})" class="inline-flex items-center gap-2 rounded-full bg-white border border-blue-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-600 hover:text-white"><i class="fa-solid fa-droplet"></i>${escapeHtml(child.name)}</button>`).join('')}</div></div>`;
-            panel.classList.remove('hidden');
-        }
-
         function onDemandSupplyChange() {
             const selectedSupply = document.getElementById('demand-supply-filter').value;
             const secondary = document.getElementById('demand-secondary-filter');
-            const values = [...new Set(reservoirRows.filter(r => matchesSupplySelection(r, selectedSupply)).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
+            const values = [...new Set(reservoirRows.filter(r => selectedSupply === 'ALL' || r.supplyFrom === selectedSupply).map(r => String(r.secondarySupply || '').trim()).filter(Boolean))].sort();
             secondary.innerHTML = '<option value="ALL">Semua Secondary Supply</option>' + values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
             populateDemandReservoirOptions(false);
             applyDemandFilters();
@@ -1258,7 +1239,7 @@
             const secondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
             const status = document.getElementById('demand-status-filter')?.value || 'ALL';
             const names = [...new Set(reservoirRows.filter(r =>
-                matchesSupplySelection(r, supply) &&
+                (supply === 'ALL' || r.supplyFrom === supply) &&
                 (secondary === 'ALL' || r.secondarySupply === secondary) &&
                 (status === 'ALL' || canonicalStatusValue(r.serviceStatus || r.statusSt) === canonicalStatusValue(status))
             ).map(r => String(r.name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ms'));
@@ -1274,9 +1255,9 @@
             const reservoir = document.getElementById('demand-reservoir-filter')?.value || 'ALL';
             filteredReservoirRows = reservoirRows.filter(r => {
                 const haystack = [r.name,r.supplyFrom,r.secondarySupply,r.tagging,r.mukim,r.lot,r.titleNo].join(' ').toLowerCase();
-                return (!search || haystack.includes(search)) && matchesSupplySelection(r, supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || canonicalStatusValue(r.serviceStatus || r.statusSt) === canonicalStatusValue(status)) && (reservoir === 'ALL' || String(r.name || '').trim() === reservoir);
+                return (!search || haystack.includes(search)) && (supply === 'ALL' || r.supplyFrom === supply) && (secondary === 'ALL' || r.secondarySupply === secondary) && (status === 'ALL' || canonicalStatusValue(r.serviceStatus || r.statusSt) === canonicalStatusValue(status)) && (reservoir === 'ALL' || String(r.name || '').trim() === reservoir);
             });
-            renderDemandHierarchy(supply); renderDemandKpis(); renderDemandTable(); renderDemandCharts(); renderDemandMap();
+            renderDemandKpis(); renderDemandTable(); renderDemandCharts(); renderDemandMap();
         }
 
         function formatMetric(value, maximumFractionDigits = 2) { return Number(value || 0).toLocaleString('en-MY', { maximumFractionDigits }); }
