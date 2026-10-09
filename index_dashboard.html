@@ -30,6 +30,7 @@
         .tank-popup-icon svg { width: 22px; height: 22px; display: block; }
         .tank-marker.inactive { background: #e11d48; }
         .tank-marker.unknown { background: #64748b; }
+        .tank-marker.balancing { background: #7c3aed; }
         .reservoir-popup .leaflet-popup-content { margin: 14px; min-width: 260px; }
         .detail-grid dt { color: #64748b; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
         .detail-grid dd { color: #0f172a; font-size: .82rem; font-weight: 600; margin-top: .2rem; overflow-wrap: anywhere; }
@@ -427,7 +428,7 @@
                                 <label class="map-layer-toggle inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-blue-800 cursor-pointer"><input id="demand-layer-kolam" type="checkbox" checked onchange="toggleDemandMapLayers()"> Polygon Kolam</label>
                                 <label class="map-layer-toggle inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-violet-800 cursor-pointer"><input id="demand-layer-secondary" type="checkbox" onchange="toggleDemandMapLayers()"> Polygon Secondary Supply</label>
                             </div>
-                            <div class="flex gap-3 text-[10px] font-semibold"><span><i class="fa-solid fa-square text-sky-600 mr-1"></i>Aktif</span><span><i class="fa-solid fa-square text-rose-600 mr-1"></i>Tidak Aktif</span><span><i class="fa-solid fa-square text-slate-500 mr-1"></i>Tiada Status</span></div>
+                            <div class="flex flex-wrap justify-end gap-x-3 gap-y-1 text-[10px] font-semibold"><span><i class="fa-solid fa-square text-violet-600 mr-1"></i>Balancing Reservoir</span><span><i class="fa-solid fa-square text-sky-600 mr-1"></i>Aktif</span><span><i class="fa-solid fa-square text-rose-600 mr-1"></i>Tidak Aktif</span><span><i class="fa-solid fa-square text-slate-500 mr-1"></i>Tiada Status</span></div>
                         </div>
                     </div>
                     <div id="demand-map"></div>
@@ -1383,6 +1384,12 @@
             return driveId ? `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000` : raw;
         }
 
+        function isBalancingReservoir(record) {
+            const ownName = canonicalReservoirName(record?.name);
+            if (!ownName) return false;
+            return reservoirRows.some(item => canonicalReservoirName(item.supplyFrom) === ownName);
+        }
+
         function renderDemandMap() {
             if (!demandMap) {
                 demandMap = L.map('demand-map', { renderer: L.canvas() }).setView([2.52, 101.95], 11);
@@ -1392,7 +1399,7 @@
             demandMarkerLayer = L.featureGroup().addTo(demandMap); let validCount = 0;
             filteredReservoirRows.forEach(r => {
                 if (!hasValidReservoirCoordinates(r)) return;
-                validCount++; const kind = reservoirStatusKind(r);
+                validCount++; const kind = isBalancingReservoir(r) ? 'balancing' : reservoirStatusKind(r);
                 const icon = L.divIcon({ className: 'tank-marker-wrap', html: `<div class="tank-marker ${kind}">${TANK_ICON_SVG}</div>`, iconSize: [34,34], iconAnchor: [17,17], popupAnchor: [0,-16] });
                 const marker = L.marker([r.lat, r.long], { icon, title: r.name }).addTo(demandMarkerLayer);
                 marker.bindTooltip(escapeHtml(r.name), { direction: 'top', offset: [0, -18], opacity: 0.92 });

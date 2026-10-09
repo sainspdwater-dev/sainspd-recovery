@@ -53,6 +53,9 @@ for (const [key, expected] of Object.entries(bukitTunggalExpected)) {
   if (bukitTunggalActual[key] !== expected) throw new Error(`Expected BUKIT TUNGGAL ${key} ${expected} from balancing row, received ${bukitTunggalActual[key]}`);
 }
 if (!html.includes("formatMetric(metricTotal('serviceCapacityMl'))")) throw new Error('Expected capacity KPI to use hierarchy balancing rows');
+if (!html.includes('.tank-marker.balancing { background: #7c3aed; }')) throw new Error('Expected purple balancing-reservoir map marker style');
+if (!html.includes("isBalancingReservoir(r) ? 'balancing' : reservoirStatusKind(r)")) throw new Error('Expected balancing reservoirs to use the purple marker class');
+if (!html.includes('Balancing Reservoir</span>')) throw new Error('Expected balancing-reservoir map legend');
 const sirusa2Rows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['SUPPLY FROM']] || '').trim() === 'SIRUSA 2');
 const sirusa2Parent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'SIRUSA 2');
 if (sirusa2Rows.length !== 5 || !sirusa2Parent) throw new Error('Expected SIRUSA 2 parent and four service-level rows');
