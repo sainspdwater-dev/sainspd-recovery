@@ -1313,13 +1313,43 @@
 
         function formatMetric(value, maximumFractionDigits = 2) { return Number(value || 0).toLocaleString('en-MY', { maximumFractionDigits }); }
 
+        function demandMetricRows() {
+            const search = String(document.getElementById('demand-search')?.value || '').trim();
+            const supply = document.getElementById('demand-supply-filter')?.value || 'ALL';
+            const secondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
+            const status = document.getElementById('demand-status-filter')?.value || 'ALL';
+            const reservoir = document.getElementById('demand-reservoir-filter')?.value || 'ALL';
+
+            // A secondary, reservoir, search or status selection is already a detailed view.
+            if (secondary !== 'ALL' || reservoir !== 'ALL' || search || status !== 'ALL') return filteredReservoirRows;
+
+            // At supply level, use the balancing/parent reservoir total instead of
+            // adding the same demand again from every service reservoir below it.
+            if (supply !== 'ALL') {
+                const parent = reservoirRows.find(record => canonicalReservoirName(record.name) === canonicalReservoirName(supply));
+                if (parent) return [parent];
+            }
+
+            // The all-supply view follows the same rule: keep parent and standalone
+            // records, while excluding children whose demand is already rolled up.
+            const recordNames = new Set(reservoirRows.map(record => canonicalReservoirName(record.name)).filter(Boolean));
+            const parentNames = new Set(reservoirRows.map(record => canonicalReservoirName(record.supplyFrom)).filter(name => recordNames.has(name)));
+            return filteredReservoirRows.filter(record => {
+                const ownName = canonicalReservoirName(record.name);
+                const upstreamName = canonicalReservoirName(record.supplyFrom);
+                return ownName === upstreamName || parentNames.has(ownName) || !parentNames.has(upstreamName);
+            });
+        }
+
         function renderDemandKpis() {
-            const total = (key) => filteredReservoirRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
+            const metricRows = demandMetricRows();
+            const metricTotal = (key) => metricRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
+            const visibleTotal = (key) => filteredReservoirRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
             document.getElementById('d-kpi-count').innerText = filteredReservoirRows.length.toLocaleString();
-            document.getElementById('d-kpi-day').innerText = `${formatMetric(total('demandDay'))} m³`;
-            document.getElementById('d-kpi-month').innerText = `${formatMetric(total('demandMonth'))} m³`;
-            document.getElementById('d-kpi-connection').innerText = formatMetric(total('connections'), 0);
-            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(total('serviceCapacityMl'))} ML`;
+            document.getElementById('d-kpi-day').innerText = `${formatMetric(metricTotal('demandDay'))} m³`;
+            document.getElementById('d-kpi-month').innerText = `${formatMetric(metricTotal('demandMonth'))} m³`;
+            document.getElementById('d-kpi-connection').innerText = formatMetric(metricTotal('connections'), 0);
+            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(visibleTotal('serviceCapacityMl'))} ML`;
         }
 
         function statusBadge(record) {
