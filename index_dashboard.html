@@ -45,6 +45,7 @@
         .sheet-grid thead tr.sheet-filter-row .sheet-col-0, .sheet-grid thead tr.sheet-filter-row .sheet-col-1 { z-index: 29; background: #dcece5; }
         .sheet-grid tbody tr:nth-child(even) td { background: #f8fafc; }
         .sheet-grid tbody tr:nth-child(even) .sheet-col-0, .sheet-grid tbody tr:nth-child(even) .sheet-col-1 { background: #f1f5f9; }
+        #kolam-sheet-table { zoom: var(--kolam-zoom, 1); }
         #masterlist-sheet-table { zoom: var(--masterlist-zoom, 1); }
         #masterlist-sheet-table .masterlist-frozen { position: sticky; z-index: 12; background: white; }
         #masterlist-sheet-table .masterlist-freeze-0 { left: 0; min-width: 190px; max-width: 190px; }
@@ -458,7 +459,14 @@
             <div id="demand-view-kolam" class="hidden space-y-4">
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
                     <div><div class="flex items-center gap-2"><h2 class="text-lg font-black text-slate-900">KOLAM DETAILS</h2><span id="kolam-access-badge" class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600">VIEW ONLY</span></div><p class="text-xs text-slate-500 mt-1">Baris pertama dan dua kolum pertama dibekukan ketika skrol.</p></div>
-                    <div class="flex flex-wrap gap-2" data-html2canvas-ignore="true">
+                    <div class="flex flex-wrap items-center gap-2" data-html2canvas-ignore="true">
+                        <div class="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-white" aria-label="Zoom jadual KOLAM DETAILS">
+                            <button type="button" data-kolam-zoom="50" onclick="setKolamZoom(50)" class="sheet-zoom-button px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">50%</button>
+                            <button type="button" data-kolam-zoom="75" onclick="setKolamZoom(75)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">75%</button>
+                            <button type="button" data-kolam-zoom="100" onclick="setKolamZoom(100)" class="sheet-zoom-button active border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">100%</button>
+                            <button type="button" data-kolam-zoom="125" onclick="setKolamZoom(125)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">125%</button>
+                            <button type="button" data-kolam-zoom="150" onclick="setKolamZoom(150)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">150%</button>
+                        </div>
                         <button onclick="toggleSheetFilters('kolam')" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold"><i class="fa-solid fa-filter mr-1"></i> FILTER</button>
                         <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
                         <button onclick="addSheetRow('kolam')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> TAMBAH BARIS</button>
@@ -1099,6 +1107,13 @@
             document.querySelectorAll('[data-masterlist-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.masterlistZoom) === zoom));
         }
 
+        function setKolamZoom(percent) {
+            const zoom = [50, 75, 100, 125, 150].includes(Number(percent)) ? Number(percent) : 100;
+            const table = document.getElementById('kolam-sheet-table');
+            if (table) table.style.setProperty('--kolam-zoom', String(zoom / 100));
+            document.querySelectorAll('[data-kolam-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.kolamZoom) === zoom));
+        }
+
         function renderSheetTable(key) {
             const state = sheetState(key), table = document.getElementById(state.tableId); if (!table) return;
             const filters = sheetFilters[key];
@@ -1127,6 +1142,7 @@
                 return `<td class="${classes}" ${cellEditable ? 'contenteditable="true" spellcheck="false"' : ''} title="${formulaLocked ? 'Formula Google Sheet dikunci' : escapeHtml(item.row[colIndex] ?? '')}" ${cellEditable ? `onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)"` : ''}>${escapeHtml(item.row[colIndex] ?? '')}${formulaLocked ? ' <i class="fa-solid fa-lock text-[9px] text-slate-400 ml-1"></i>' : ''}</td>`;
             }).join('')}</tr>`).join('') : `<tr><td colspan="${Math.max(1, visibleColumnIndexes.length)}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
             table.innerHTML = `<thead><tr>${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
+            if (key === 'kolam') setKolamZoom(Number(document.querySelector('[data-kolam-zoom].active')?.dataset.kolamZoom || 100));
             if (key === 'masterlist') setMasterlistZoom(Number(document.querySelector('[data-masterlist-zoom].active')?.dataset.masterlistZoom || 100));
             document.getElementById(`${key}-sheet-count`).innerText = `${visibleRows.length.toLocaleString()} / ${state.rows.length.toLocaleString()} rekod`;
         }

@@ -63,6 +63,9 @@ if (!html.includes("const MASTERLIST_HIDDEN_COLUMN_INDEXES = new Set([0, 22, 23,
 if (!html.includes("['LRA', 0], ['KOLAM UTAMA', 1], ['SECONDARY SUPPLY', 2], ['KAWASAN', 3]")) throw new Error('Expected MASTERLIST frozen columns from LRA through KAWASAN');
 if (!html.includes("['LRA', 'KOLAM UTAMA', 'SECONDARY SUPPLY', 'NAMA KOLAM']")) throw new Error('Expected MASTERLIST Google Sheet dropdown columns');
 for (const zoom of [50, 75, 100, 125, 150]) if (!html.includes(`data-masterlist-zoom="${zoom}"`)) throw new Error(`Expected MASTERLIST ${zoom}% zoom control`);
+for (const zoom of [50, 75, 100, 125, 150]) if (!html.includes(`data-kolam-zoom="${zoom}"`)) throw new Error(`Expected KOLAM DETAILS ${zoom}% zoom control`);
+if (!html.includes('#kolam-sheet-table { zoom: var(--kolam-zoom, 1); }')) throw new Error('Expected KOLAM DETAILS table zoom styling');
+if (!html.includes('function setKolamZoom(percent)')) throw new Error('Expected KOLAM DETAILS zoom handler');
 const sirusa2Rows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['SUPPLY FROM']] || '').trim() === 'SIRUSA 2');
 const sirusa2Parent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'SIRUSA 2');
 if (sirusa2Rows.length !== 5 || !sirusa2Parent) throw new Error('Expected SIRUSA 2 parent and four service-level rows');
