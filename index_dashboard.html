@@ -104,7 +104,11 @@
             </div>
             <div class="pt-6 px-2"><p class="text-[10px] tracking-[.16em] uppercase text-slate-500 font-bold mb-3">Modul Utama</p></div>
             <nav class="space-y-2">
-                <button id="module-recovery-btn" onclick="switchModule('recovery')" class="sidebar-link active-module w-full text-left rounded-xl p-3.5 flex items-start gap-3">
+                <button id="module-home-btn" onclick="switchModule('home')" class="sidebar-link active-module w-full text-left rounded-xl p-3.5 flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-white/10 grid place-items-center shrink-0"><i class="fa-solid fa-house"></i></span>
+                    <span><b class="block text-sm">Halaman Utama</b><small class="block text-[11px] mt-1 text-current opacity-70">Pilih modul sistem</small></span>
+                </button>
+                <button id="module-recovery-btn" onclick="switchModule('recovery')" class="sidebar-link w-full text-left rounded-xl p-3.5 flex items-start gap-3 text-slate-300 hover:bg-slate-900 hover:text-white">
                     <span class="w-9 h-9 rounded-lg bg-white/10 grid place-items-center shrink-0"><i class="fa-solid fa-arrows-rotate"></i></span>
                     <span><b class="block text-sm">Pemulihan Bekalan Air</b><small class="block text-[11px] mt-1 text-current opacity-70">Status kerja dan recovery</small></span>
                 </button>
@@ -126,7 +130,7 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center">
             <div class="mb-3 lg:mb-0 text-center lg:text-left flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="w-10 h-10 shrink-0 rounded-lg bg-slate-800 hover:bg-slate-700" aria-label="Buka atau tutup menu"><i class="fa-solid fa-bars"></i></button>
-                <div><h1 class="text-2xl font-bold tracking-tight">SISTEM BEKALAN AIR PORT DICKSON</h1><p id="module-subtitle" class="text-xs text-slate-400 mt-0.5">Sistem Pemantauan Pemulihan Bekalan Air</p></div>
+                <div><h1 class="text-2xl font-bold tracking-tight">SISTEM BEKALAN AIR PORT DICKSON</h1><p id="module-subtitle" class="text-xs text-slate-400 mt-0.5">Halaman Utama</p></div>
             </div>
             
             <div class="flex flex-wrap justify-center items-center gap-3">
@@ -153,7 +157,7 @@
         </div>
     </header>
 
-    <nav id="recovery-subnav" class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40" data-html2canvas-ignore="true">
+    <nav id="recovery-subnav" class="hidden bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40" data-html2canvas-ignore="true">
         <div class="max-w-7xl mx-auto px-4 py-3 flex space-x-2 overflow-x-auto" id="main-nav-container">
             <button onclick="switchTab('fisik')" id="nav-fisik" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap active-tab">[ STATUS KERJA FIZIKAL ]</button>
             <button onclick="switchTab('linggi')" id="nav-linggi" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">[ LOJI LINGGI SUPPLY ]</button>
@@ -173,9 +177,35 @@
     </div>
 
     <main class="max-w-7xl mx-auto px-4 py-6" id="dashboard-main-content">
-        
+
+        <!-- HALAMAN UTAMA -->
+        <section id="tab-home" class="space-y-6">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-900 text-white p-7 md:p-10 shadow-xl">
+                <div class="absolute -right-16 -top-20 w-72 h-72 rounded-full bg-cyan-400/10 blur-2xl"></div>
+                <div class="relative max-w-3xl">
+                    <p class="text-xs uppercase tracking-[.24em] text-cyan-300 font-bold">Port Dickson</p>
+                    <h2 class="text-3xl md:text-4xl font-black mt-3">Selamat Datang ke Sistem Bekalan Air Port Dickson</h2>
+                    <p class="text-sm md:text-base text-slate-300 mt-3">Pilih modul untuk melihat status pemulihan atau maklumat demand, kapasiti dan lokasi kolam servis.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <button onclick="switchModule('recovery')" class="group text-left bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <span class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 grid place-items-center text-2xl group-hover:bg-blue-600 group-hover:text-white transition"><i class="fa-solid fa-arrows-rotate"></i></span>
+                    <h3 class="text-xl font-black text-slate-900 mt-5">Sistem Pemantauan Pemulihan Bekalan Air</h3>
+                    <p class="text-sm text-slate-500 mt-2">Status kerja fizikal, recovery mengikut kawasan dan laporan operasi.</p>
+                    <span class="inline-flex items-center gap-2 mt-6 text-sm font-bold text-blue-700">BUKA MODUL <i class="fa-solid fa-arrow-right"></i></span>
+                </button>
+                <button onclick="switchModule('demand')" class="group text-left bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <span class="w-14 h-14 rounded-2xl bg-cyan-100 text-cyan-700 grid place-items-center text-2xl group-hover:bg-cyan-600 group-hover:text-white transition"><i class="fa-solid fa-water"></i></span>
+                    <h3 class="text-xl font-black text-slate-900 mt-5">Demand Bekalan Air Port Dickson</h3>
+                    <p class="text-sm text-slate-500 mt-2">Dashboard demand, data kolam, peta KML dan paparan masterlist.</p>
+                    <span class="inline-flex items-center gap-2 mt-6 text-sm font-bold text-cyan-700">BUKA MODUL <i class="fa-solid fa-arrow-right"></i></span>
+                </button>
+            </div>
+        </section>
+
         <!-- TAB FIZIKAL -->
-        <section id="tab-fisik" class="space-y-6 tab-content">
+        <section id="tab-fisik" class="space-y-6 tab-content hidden">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-blue-600"><p class="text-xs font-semibold text-slate-400 uppercase">Jumlah Tugasan</p><h3 id="kpi-tugas" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
                 <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-l-emerald-600"><p class="text-xs font-semibold text-slate-400 uppercase">Siap (Ikut Jadual)</p><h3 id="kpi-ontime" class="text-2xl font-black text-slate-800 mt-1">0</h3></div>
@@ -509,7 +539,7 @@
         let currentRowFizikal = null;
         let currentDataVersion = "0";
         let isLiveMode = false;
-        let activeModule = 'recovery';
+        let activeModule = 'home';
         let reservoirRows = []; let filteredReservoirRows = []; let reservoirDataLoaded = false; let reservoirLoading = false;
         let reservoirHeaders = []; let reservoirRawRows = []; let masterlistHeaders = []; let masterlistRawRows = []; let masterlistDataLoaded = false;
         let activeDemandView = 'dashboard';
@@ -570,6 +600,7 @@
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
             }
 
+            switchModule('home');
             fetchData(true);
             refreshInterval = setInterval(checkVersionAndFetch, 15000); 
             timerInterval = setInterval(() => { if (activeTabName === 'fisik') renderPhysicalWork(); }, 60000); 
@@ -666,17 +697,21 @@
 
         function switchModule(moduleName) {
             activeModule = moduleName;
+            const isHome = moduleName === 'home';
             const isDemand = moduleName === 'demand';
-            document.getElementById('module-recovery-btn').classList.toggle('active-module', !isDemand);
+            const isRecovery = moduleName === 'recovery';
+            document.getElementById('module-home-btn').classList.toggle('active-module', isHome);
+            document.getElementById('module-recovery-btn').classList.toggle('active-module', isRecovery);
             document.getElementById('module-demand-btn').classList.toggle('active-module', isDemand);
-            document.getElementById('recovery-subnav').classList.toggle('hidden', isDemand);
+            document.getElementById('tab-home').classList.toggle('hidden', !isHome);
+            document.getElementById('recovery-subnav').classList.toggle('hidden', !isRecovery);
             document.getElementById('tab-demand').classList.toggle('hidden', !isDemand);
-            document.getElementById('module-subtitle').innerText = isDemand ? 'Demand Bekalan Air Port Dickson' : 'Sistem Pemantauan Pemulihan Bekalan Air';
+            document.getElementById('module-subtitle').innerText = isHome ? 'Halaman Utama' : (isDemand ? 'Demand Bekalan Air Port Dickson' : 'Sistem Pemantauan Pemulihan Bekalan Air');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             if (isDemand) {
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                if (!reservoirDataLoaded && !reservoirLoading) fetchReservoirData();
+                if (!reservoirDataLoaded && !reservoirLoading) fetchReservoirData(IS_LOCAL_PREVIEW);
                 setTimeout(() => { if (demandMap) demandMap.invalidateSize(); }, 200);
-            } else {
+            } else if (isRecovery) {
                 switchTab(activeTabName, true);
             }
             if (window.innerWidth < 768) toggleSidebar(false);
@@ -723,9 +758,12 @@
 
         async function manualRefresh() {
             const btn = document.getElementById('refresh-btn'); btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i><span>MENGEKEMASKINI...</span>`;
-            if (activeModule === 'demand') await fetchReservoirData(true); else await fetchData(false);
-            btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span class="hidden sm:inline">REFRESH</span>`;
-            showToast("Data Dikemaskini!");
+            try {
+                if (activeModule === 'demand') await fetchReservoirData(true); else await fetchData(false);
+                showToast('Data terkini telah dimuatkan.');
+            } finally {
+                btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span class="hidden sm:inline">REFRESH</span>`;
+            }
         }
 
         function switchTab(tabKey, force = false) {
@@ -1062,16 +1100,59 @@
             box.className = `rounded-lg border p-3 text-xs ${classes}`; box.innerText = message;
         }
 
+        function reloadPrototypeSnapshotAsset() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `assets/prototype-sheet-data.js?sync=${Date.now()}`;
+                script.onload = () => { script.remove(); resolve(window.PROTOTYPE_SHEET_DATA); };
+                script.onerror = () => { script.remove(); reject(new Error('Fail snapshot baharu tidak dapat dibaca.')); };
+                document.head.appendChild(script);
+            });
+        }
+
+        async function syncLocalPrototypeSnapshot() {
+            updateDemandStatus('Menyegerakkan Google Sheet...', 'loading');
+            const response = await fetch('/__sync-sheet-data', { method: 'POST', cache: 'no-store' });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Pelayan lokal perlu dimulakan semula untuk mengaktifkan sync Google Sheet.');
+            await reloadPrototypeSnapshotAsset();
+            localStorage.removeItem('pd-water-prototype-v3-kolam');
+            localStorage.removeItem('pd-water-prototype-v3-masterlist');
+            sheetEdits.kolam = {}; sheetEdits.masterlist = {};
+            return window.PROTOTYPE_SHEET_DATA;
+        }
+
         async function fetchReservoirData(forceRefresh = false) {
             if (reservoirLoading) return;
             reservoirLoading = true; updateDemandStatus('Memuatkan KOLAM DETAILS...', 'loading');
             document.getElementById('demand-error').classList.add('hidden');
-            const snapshot = window.PROTOTYPE_SHEET_DATA?.kolam;
-            if (IS_LOCAL_PREVIEW && snapshot?.headers?.length && snapshot?.rows?.length) {
-                ingestReservoirPayload(snapshot.rows, snapshot.headers);
-                updateDemandStatus(`${snapshot.rows.length.toLocaleString()} rekod penuh lokal`, 'success');
-                showSheetNotice('kolam', `${snapshot.rows.length.toLocaleString()} rekod penuh KOLAM DETAILS · snapshot Google Sheet ${new Date(window.PROTOTYPE_SHEET_DATA.syncedAt).toLocaleString('ms-MY')}`, 'success');
-                reservoirLoading = false;
+            if (IS_LOCAL_PREVIEW) {
+                try {
+                    if (forceRefresh) await syncLocalPrototypeSnapshot();
+                    const snapshot = window.PROTOTYPE_SHEET_DATA?.kolam;
+                    if (!snapshot?.headers?.length || !snapshot?.rows?.length) throw new Error('Snapshot KOLAM DETAILS tidak tersedia.');
+                    ingestReservoirPayload(snapshot.rows, snapshot.headers);
+                    const masterlist = window.PROTOTYPE_SHEET_DATA?.masterlist;
+                    if (masterlist?.headers?.length && masterlist?.rows?.length) ingestMasterlistPayload(masterlist.rows, masterlist.headers);
+                    const syncTime = new Date(window.PROTOTYPE_SHEET_DATA.syncedAt);
+                    const syncLabel = Number.isNaN(syncTime.getTime()) ? '-' : syncTime.toLocaleString('ms-MY');
+                    updateDemandStatus(`${snapshot.rows.length.toLocaleString()} rekod Google Sheet`, 'success');
+                    showSheetNotice('kolam', `${snapshot.rows.length.toLocaleString()} rekod penuh KOLAM DETAILS · disegerakkan ${syncLabel}`, 'success');
+                    showSheetNotice('masterlist', `${masterlist?.rows?.length?.toLocaleString() || 0} rekod penuh MASTERLIST · disegerakkan ${syncLabel}`, 'success');
+                    document.getElementById('last-updated').innerText = `Last Updated: ${syncLabel}`;
+                } catch (error) {
+                    const snapshot = window.PROTOTYPE_SHEET_DATA?.kolam;
+                    if (!snapshot?.headers?.length || !snapshot?.rows?.length) {
+                        buildKolamPrototypeFallback();
+                    } else {
+                        ingestReservoirPayload(snapshot.rows, snapshot.headers);
+                        updateDemandStatus(`${snapshot.rows.length.toLocaleString()} rekod snapshot lokal`, 'success');
+                    }
+                    showSheetNotice('kolam', `${error.message} Data snapshot terakhir masih dipaparkan.`, 'error');
+                    if (forceRefresh) showToast(error.message || 'Sync Google Sheet gagal.', true);
+                } finally {
+                    reservoirLoading = false;
+                }
                 return;
             }
             try {
@@ -1226,10 +1307,9 @@
                 if (!hasValidReservoirCoordinates(r)) return;
                 validCount++; const kind = reservoirStatusKind(r);
                 const icon = L.divIcon({ className: 'tank-marker-wrap', html: `<div class="tank-marker ${kind}">${TANK_ICON_SVG}</div>`, iconSize: [34,34], iconAnchor: [17,17], popupAnchor: [0,-16] });
-                const rowsHtml = r.pairs.map(item => `<div class="grid grid-cols-[115px_1fr] gap-2 py-1.5 border-b border-slate-100"><b class="text-[9px] uppercase text-slate-500">${escapeHtml(item.label)}</b><span class="text-[11px] text-slate-800 break-words">${escapeHtml(item.value)}</span></div>`).join('');
-                const img = imageUrl(r.image);
-                const popup = `<div><div class="flex items-start gap-2 mb-2"><span class="tank-popup-icon w-8 h-8 rounded-lg bg-sky-600 text-white grid place-items-center shrink-0">${TANK_ICON_SVG}</span><div><h4 class="font-black text-slate-900 leading-tight">${escapeHtml(r.name)}</h4><p class="text-[10px] text-slate-500 mt-1">${escapeHtml(r.mukim || r.supplyFrom || 'Port Dickson')}</p></div></div>${img ? `<img src="${escapeHtml(img)}" alt="Gambar ${escapeHtml(r.name)}" class="w-full h-28 object-cover rounded-lg mb-2" onerror="this.style.display='none'">` : ''}<div class="max-h-56 overflow-y-auto pr-1">${rowsHtml}</div><button onclick="openReservoirDetail(${r._id})" class="mt-3 w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">LIHAT PAPARAN PENUH</button></div>`;
-                L.marker([r.lat, r.long], { icon }).addTo(demandMarkerLayer).bindPopup(popup, { className: 'reservoir-popup', maxWidth: 380, autoPan: false, keepInView: false });
+                const marker = L.marker([r.lat, r.long], { icon, title: r.name }).addTo(demandMarkerLayer);
+                marker.bindTooltip(escapeHtml(r.name), { direction: 'top', offset: [0, -18], opacity: 0.92 });
+                marker.on('click', () => openReservoirDetail(r._id));
             });
             document.getElementById('demand-map-count').innerText = `${validCount.toLocaleString()} lokasi dipaparkan`;
             if (validCount && demandMarkerLayer.getBounds().isValid()) demandMap.fitBounds(demandMarkerLayer.getBounds(), { padding: [35,35], maxZoom: 15 });
@@ -1361,6 +1441,7 @@
             footer.innerHTML = editable ? `<button onclick="closeReservoirDetail()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="reservoir-detail-save" onclick="saveReservoirDetails(${record._id})" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>SIMPAN KE DATABASE</button>` : '<span class="text-xs text-slate-500">Paparan sahaja</span>';
             footer.classList.remove('hidden'); footer.classList.add('flex');
             document.getElementById('reservoir-detail-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
             content.scrollTop = 0; requestAnimationFrame(() => content.scrollTo({ top: 0, behavior: 'auto' }));
         }
 
@@ -1406,6 +1487,7 @@
         function closeReservoirDetail() {
             document.getElementById('reservoir-detail-modal').classList.add('hidden');
             const footer = document.getElementById('reservoir-detail-footer'); footer.classList.add('hidden'); footer.classList.remove('flex');
+            document.body.style.overflow = '';
         }
 
         // ==========================================

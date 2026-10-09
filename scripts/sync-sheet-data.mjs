@@ -1,4 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const SHEET_ID = '1UQR0-pPfYpLVAY7_yrH9go01gmjeLxKlAijPuQN5q4I';
 const SHEETS = {
@@ -50,14 +52,24 @@ async function readSheet(sheetName) {
   return { headers, rows };
 }
 
-const data = {};
-for (const [key, sheetName] of Object.entries(SHEETS)) data[key] = await readSheet(sheetName);
-const payload = {
-  syncedAt: new Date().toISOString(),
-  source: `https://docs.google.com/spreadsheets/d/${SHEET_ID}`,
-  ...data
-};
+export async function syncSheetData(options = {}) {
+  const outputRoot = path.resolve(options.outputRoot || process.cwd());
+  const data = {};
+  for (const [key, sheetName] of Object.entries(SHEETS)) data[key] = await readSheet(sheetName);
+  const payload = {
+    syncedAt: new Date().toISOString(),
+    source: `https://docs.google.com/spreadsheets/d/${SHEET_ID}`,
+    ...data
+  };
 
-await mkdir('assets', { recursive: true });
-await writeFile('assets/prototype-sheet-data.js', `window.PROTOTYPE_SHEET_DATA = ${JSON.stringify(payload)};\n`, 'utf8');
-console.log(`Data prototaip disegerakkan: ${data.kolam.rows.length} KOLAM DETAILS, ${data.masterlist.rows.length} MASTERLIST.`);
+  const assetsDirectory = path.join(outputRoot, 'assets');
+  await mkdir(assetsDirectory, { recursive: true });
+  await writeFile(path.join(assetsDirectory, 'prototype-sheet-data.js'), `window.PROTOTYPE_SHEET_DATA = ${JSON.stringify(payload)};\n`, 'utf8');
+  return payload;
+}
+
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isDirectRun) {
+  const payload = await syncSheetData();
+  console.log(`Data prototaip disegerakkan: ${payload.kolam.rows.length} KOLAM DETAILS, ${payload.masterlist.rows.length} MASTERLIST.`);
+}
