@@ -28,7 +28,7 @@ async function getReservoirData(body, env) {
   }
 
   const accessToken = await getGoogleAccessToken(env);
-  const range = encodeURIComponent("'KOLAM DETAILS'!A:AF");
+  const range = encodeURIComponent("'KOLAM DETAILS'!A:AK");
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values/${range}?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
@@ -48,7 +48,7 @@ async function getReservoirData(body, env) {
 }
 
 const EDITABLE_SHEETS = {
-  'KOLAM DETAILS': { range: 'A:AF', headerRow: 1 },
+  'KOLAM DETAILS': { range: 'A:AK', headerRow: 1 },
   'MASTERLIST': { range: 'A:S', headerRow: 3 }
 };
 
@@ -86,7 +86,8 @@ async function updateSheetCells(body, env) {
   if (!updates.length || updates.length > 500) throw new Error('Senarai perubahan tidak sah.');
   const data = updates.map(update => {
     const row = Number(update.row), column = Number(update.column);
-    if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || column > 32) throw new Error('Alamat sel tidak sah.');
+    const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 19;
+    if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || column > maxColumn) throw new Error('Alamat sel tidak sah.');
     return { range: `'${sheetName}'!${columnToLetter(column)}${row}`, values: [[update.value ?? '']] };
   });
   const accessToken = await getGoogleAccessToken(env);

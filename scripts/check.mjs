@@ -24,6 +24,9 @@ new Function('window', prototypeDataSource)(prototypeContext.window);
 const prototypeData = prototypeContext.window.PROTOTYPE_SHEET_DATA;
 if ((prototypeData?.kolam?.rows?.length || 0) < 75) throw new Error(`Expected at least 75 KOLAM DETAILS rows, found ${prototypeData?.kolam?.rows?.length || 0}`);
 if (!prototypeData?.kolam?.headers?.includes('CAPACITY ST (ML)')) throw new Error('Expected updated CAPACITY ST (ML) header');
+for (const header of ['KOD KOLAM', 'JENIS KOLAM', 'KOLAM BALANCING UTAMA', 'KOD OUTLET', 'REKOD DEMAND UTAMA']) {
+  if (!prototypeData?.kolam?.headers?.includes(header)) throw new Error(`Expected KOLAM DETAILS relationship header ${header}`);
+}
 if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 548 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
 if (prototypeData.masterlist.headers.length !== 29 || prototypeData.masterlist.headers.slice(22, 29).some(header => String(header || '').trim())) throw new Error('Expected blank MASTERLIST columns 23 to 29');
 if (!prototypeData.masterlist.rows.some(row => row.some(value => String(value || '').includes('m³')))) throw new Error('Expected MASTERLIST m³ display values from Google Sheet');
@@ -37,6 +40,18 @@ const supplyFilterValues = new Set(prototypeData.kolam.rows.map(row => String(ro
 if (supplyFilterValues.has('SAWAH RAJA')) throw new Error('SAWAH RAJA should no longer appear in the Supply From filter');
 
 const kolamHeaderIndex = Object.fromEntries(prototypeData.kolam.headers.map((header, index) => [header, index]));
+const reservoirCodes = prototypeData.kolam.rows.map(row => String(row[kolamHeaderIndex['KOD KOLAM']] || '').trim()).filter(Boolean);
+if (new Set(reservoirCodes).size !== prototypeData.kolam.rows.length) throw new Error('Expected a unique KOD KOLAM for every reservoir row');
+const balancingRows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['JENIS KOLAM']] || '').trim() === 'KOLAM BALANCING');
+if (balancingRows.length !== 6) throw new Error(`Expected 6 explicit balancing reservoirs, found ${balancingRows.length}`);
+if (balancingRows.some(row => String(row[kolamHeaderIndex['KOLAM BALANCING UTAMA']] || '').trim())) throw new Error('Balancing reservoirs must not have a parent code');
+const balancingCodes = new Set(balancingRows.map(row => String(row[kolamHeaderIndex['KOD KOLAM']] || '').trim()));
+const invalidServiceParent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['JENIS KOLAM']] || '').trim() === 'KOLAM SERVIS' && !balancingCodes.has(String(row[kolamHeaderIndex['KOLAM BALANCING UTAMA']] || '').trim()) && !String(row[kolamHeaderIndex['KOLAM BALANCING UTAMA']] || '').startsWith('EXT-'));
+if (invalidServiceParent) throw new Error(`Invalid service parent for ${invalidServiceParent[kolamHeaderIndex['RESERVOIR NAME']]}`);
+const springHillRows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim().toUpperCase().startsWith('BANDAR SPRING HILL'));
+if (springHillRows.length !== 5) throw new Error(`Expected 5 Bandar Spring Hill reservoir rows, found ${springHillRows.length}`);
+if (new Set(springHillRows.map(row => row[kolamHeaderIndex['KOD OUTLET']])).size !== 1) throw new Error('Expected all Bandar Spring Hill reservoirs to share one outlet code');
+if (springHillRows.filter(row => String(row[kolamHeaderIndex['REKOD DEMAND UTAMA']] || '').trim() === 'YA').length !== 1) throw new Error('Expected exactly one Bandar Spring Hill primary demand row');
 const numberFromSheet = value => Number(String(value || '').replace(/,/g, '')) || 0;
 const bukitTunggalParent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'BUKIT TUNGGAL');
 if (!bukitTunggalParent) throw new Error('Expected BUKIT TUNGGAL balancing row from Google Sheet row 2');
@@ -55,7 +70,8 @@ const bukitTunggalActual = {
 for (const [key, expected] of Object.entries(bukitTunggalExpected)) {
   if (bukitTunggalActual[key] !== expected) throw new Error(`Expected BUKIT TUNGGAL ${key} ${expected} from balancing row, received ${bukitTunggalActual[key]}`);
 }
-if (!html.includes("formatMetric(metricTotal('serviceCapacityMl'))")) throw new Error('Expected capacity KPI to use hierarchy balancing rows');
+if (!html.includes("capacityRows.reduce((sum, item) => sum + Number(item.serviceCapacityMl || 0), 0)")) throw new Error('Expected capacity KPI to preserve physical reservoir capacity rows');
+if (!html.includes('collapseOutletDemandRows(filteredReservoirRows)')) throw new Error('Expected outlet demand grouping to prevent duplicate demand totals');
 if (!html.includes('.tank-marker.balancing { background: #7c3aed; }')) throw new Error('Expected purple balancing-reservoir map marker style');
 if (!html.includes("isBalancingReservoir(r) ? 'balancing' : reservoirStatusKind(r)")) throw new Error('Expected balancing reservoirs to use the purple marker class');
 if (!html.includes('Balancing Reservoir</span>')) throw new Error('Expected balancing-reservoir map legend');
@@ -66,6 +82,9 @@ for (const zoom of [50, 75, 100, 125, 150]) if (!html.includes(`data-masterlist-
 for (const zoom of [50, 75, 100, 125, 150]) if (!html.includes(`data-kolam-zoom="${zoom}"`)) throw new Error(`Expected KOLAM DETAILS ${zoom}% zoom control`);
 if (!html.includes('#kolam-sheet-table { zoom: var(--kolam-zoom, 1); }')) throw new Error('Expected KOLAM DETAILS table zoom styling');
 if (!html.includes('function setKolamZoom(percent)')) throw new Error('Expected KOLAM DETAILS zoom handler');
+if (!html.includes("addKolamRow('balancing')") || !html.includes("addKolamRow('service')")) throw new Error('Expected guided add buttons for balancing and service reservoirs');
+if (!html.includes("const KOLAM_TYPE_BALANCING = 'KOLAM BALANCING'")) throw new Error('Expected explicit reservoir type support');
+if (!workerSource.includes("'KOLAM DETAILS': { range: 'A:AK'")) throw new Error('Expected Worker range to include relationship columns through AK');
 const sirusa2Rows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['SUPPLY FROM']] || '').trim() === 'SIRUSA 2');
 const sirusa2Parent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'SIRUSA 2');
 if (sirusa2Rows.length !== 5 || !sirusa2Parent) throw new Error('Expected SIRUSA 2 parent and four service-level rows');
