@@ -6,13 +6,16 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 - Demand Bekalan Air Port Dickson (dashboard, carta, direktori dan peta kolam)
 - Paparan spreadsheet `KOLAM DETAILS` dan `MASTERLIST` dengan freeze header dan dua kolum pertama
 - Lapisan 43 sub-KML kolam mengikut `SUPPLY FROM` / `SECONDARY SUPPLY`
-- Snapshot penuh Google Sheet untuk prototaip lokal: 74 rekod `KOLAM DETAILS` dan 548 rekod `MASTERLIST`
+- Snapshot penuh Google Sheet untuk prototaip lokal: 75 rekod `KOLAM DETAILS` dan 552 rekod `MASTERLIST`
 - Sidebar auto-responsif: halakan tetikus ke tepi kiri untuk membukanya pada desktop, atau gunakan butang menu pada telefon
 - Kawalan lapisan peta berasingan untuk polygon kolam dan Secondary Supply; polygon kolam aktif secara lalai
 - Paparan penuh kolam dibahagikan kepada Maklumat Am (hijau), Kolam Servis (biru) dan Suction Tank (merah)
 - Pentadbir boleh menyunting butiran kolam, menyimpan ke Google Sheet dan menggantikan polygon melalui fail `.kml`
 - Status seperti `ACTIVE` dan `Active` digabungkan sebagai satu pilihan `Active`
 - Medan formula `DEMAND PER DAY (M3)` dikunci daripada suntingan, dan data suction tank menggunakan header `CAPACITY ST (ML)`
+- Pentadbir menambah Kolam Balancing atau Kolam Servis melalui popup berpandu. Kod `BR-xxx` / `SR-xxx` dijana automatik, dan Kolam Servis dipautkan kepada Kolam Balancing utama serta kod outlet.
+- Setiap jadual mempunyai zoom 50% hingga 175%, nombor turutan MASTERLIST dan tindakan padam yang memerlukan nama rekod ditaip semula.
+- Kolum formula MASTERLIST L, M dan N dikunci daripada suntingan web.
 
 ## Uji di VS Code
 
@@ -48,7 +51,7 @@ node scripts/sync-sheet-data.mjs
 
 Arahan yang sama tersedia melalui `Terminal > Run Task > Sync Full Google Sheet Data`.
 
-Arahan ini mengemas kini kesemua 74 rekod `KOLAM DETAILS` dan 548 rekod
+Arahan ini mengemas kini kesemua 75 rekod `KOLAM DETAILS` dan 552 rekod
 `MASTERLIST` berdasarkan kandungan semasa Google Sheet. Worker masih digunakan
 untuk data produksi selepas deployment.
 
@@ -74,6 +77,19 @@ Paparan spreadsheet turut menggunakan:
 Suntingan admin dihantar secara batch melalui action `updateSheetCells`. Action
 ini mesti diletakkan di belakang semakan token admin Worker sedia ada. Akaun
 servis Google juga perlu mempunyai akses Editor kepada fail Sheet.
+
+Penambahan baris baharu menyalin format, dropdown, dan formula daripada baris
+rujukan Google Sheet sebelum nilai dimasukkan. Action `deleteSheetRow` menyemak
+semula nama pada Google Sheet sebelum membuang baris. Kedua-dua action mesti
+diletakkan di belakang semakan token admin.
+
+Gambar dalam popup tambah kolam menggunakan action `uploadReservoirImage`.
+Untuk produksi, cipta folder Google Drive khusus, kongsi folder itu sebagai
+Editor kepada akaun servis `GOOGLE_CLIENT_EMAIL`, kemudian tambah ID folder
+sebagai binding Worker `DRIVE_FOLDER_ID`. Skop OAuth Worker perlu merangkumi
+Google Sheets dan Google Drive seperti dalam `cloudflare-worker-kolam-snippet.js`.
+Preview lokal hanya menyimpan pratonton gambar dalam browser; ia tidak memuat
+naik fail ke Drive sehingga Worker produksi dikonfigurasi.
 
 Muat naik polygon kolam menggunakan action `saveReservoirKml`, manakala
 `getReservoirKmlOverrides` memuatkan semula KML yang telah diganti. Kedua-duanya

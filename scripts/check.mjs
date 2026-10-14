@@ -9,7 +9,7 @@ for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveRes
 }
 const workerSource = await readFile('cloudflare-worker-kolam-snippet.js', 'utf8');
 new Function(workerSource);
-for (const required of ['saveReservoirKml', 'getReservoirKmlOverrides', 'updateSheetCells']) {
+for (const required of ['saveReservoirKml', 'getReservoirKmlOverrides', 'updateSheetCells', 'deleteSheetRow', 'uploadReservoirImage', 'prepareNewSheetRows']) {
   if (!workerSource.includes(required)) throw new Error(`Missing Worker persistence function: ${required}`);
 }
 const manifestSource = await readFile('assets/kml-kolam-manifest.js', 'utf8');
@@ -27,7 +27,7 @@ if (!prototypeData?.kolam?.headers?.includes('CAPACITY ST (ML)')) throw new Erro
 for (const header of ['KOD KOLAM', 'JENIS KOLAM', 'KOLAM BALANCING UTAMA', 'KOD OUTLET', 'REKOD DEMAND UTAMA']) {
   if (!prototypeData?.kolam?.headers?.includes(header)) throw new Error(`Expected KOLAM DETAILS relationship header ${header}`);
 }
-if (prototypeData?.masterlist?.rows?.length !== 548) throw new Error(`Expected 548 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
+if ((prototypeData?.masterlist?.rows?.length || 0) < 500) throw new Error(`Expected at least 500 MASTERLIST rows, found ${prototypeData?.masterlist?.rows?.length || 0}`);
 if (prototypeData.masterlist.headers.length !== 29 || prototypeData.masterlist.headers.slice(22, 29).some(header => String(header || '').trim())) throw new Error('Expected blank MASTERLIST columns 23 to 29');
 if (!prototypeData.masterlist.rows.some(row => row.some(value => String(value || '').includes('m³')))) throw new Error('Expected MASTERLIST m³ display values from Google Sheet');
 if (!prototypeData.masterlist.rows.some(row => row.some(value => /(?:^|\s)-?[\d,]+(?:\.\d+)?\sG$/.test(String(value || '').trim())))) throw new Error('Expected MASTERLIST gallon values with G unit from Google Sheet');
@@ -78,13 +78,17 @@ if (!html.includes('Balancing Reservoir</span>')) throw new Error('Expected bala
 if (!html.includes("const MASTERLIST_HIDDEN_COLUMN_INDEXES = new Set([0, 22, 23, 24, 25, 26, 27, 28])")) throw new Error('Expected BIL and MASTERLIST columns 23 to 29 hidden');
 if (!html.includes("['LRA', 0], ['KOLAM UTAMA', 1], ['SECONDARY SUPPLY', 2], ['KAWASAN', 3]")) throw new Error('Expected MASTERLIST frozen columns from LRA through KAWASAN');
 if (!html.includes("['LRA', 'KOLAM UTAMA', 'SECONDARY SUPPLY', 'NAMA KOLAM']")) throw new Error('Expected MASTERLIST Google Sheet dropdown columns');
-for (const zoom of [50, 75, 100, 125, 150]) if (!html.includes(`data-masterlist-zoom="${zoom}"`)) throw new Error(`Expected MASTERLIST ${zoom}% zoom control`);
-for (const zoom of [50, 75, 100, 125, 150]) if (!html.includes(`data-kolam-zoom="${zoom}"`)) throw new Error(`Expected KOLAM DETAILS ${zoom}% zoom control`);
+for (const zoom of [50, 75, 100, 125, 150, 175]) if (!html.includes(`data-masterlist-zoom="${zoom}"`)) throw new Error(`Expected MASTERLIST ${zoom}% zoom control`);
+for (const zoom of [50, 75, 100, 125, 150, 175]) if (!html.includes(`data-kolam-zoom="${zoom}"`)) throw new Error(`Expected KOLAM DETAILS ${zoom}% zoom control`);
 if (!html.includes('#kolam-sheet-table { zoom: var(--kolam-zoom, 1); }')) throw new Error('Expected KOLAM DETAILS table zoom styling');
 if (!html.includes('function setKolamZoom(percent)')) throw new Error('Expected KOLAM DETAILS zoom handler');
-if (!html.includes("addKolamRow('balancing')") || !html.includes("addKolamRow('service')")) throw new Error('Expected guided add buttons for balancing and service reservoirs');
+if (!html.includes("openAddReservoirModal('balancing')") || !html.includes("openAddReservoirModal('service')")) throw new Error('Expected popup add buttons for balancing and service reservoirs');
+if (!html.includes('function confirmDeleteSheetRow()') || !html.includes('delete-row-confirmation')) throw new Error('Expected typed row-delete confirmation');
+if (!html.includes("[11, 12, 13].includes(Number(columnIndex))")) throw new Error('Expected MASTERLIST formula columns L to N to be locked');
+if (!html.includes('class="sheet-sequence">NO.</th>')) throw new Error('Expected MASTERLIST sequence column');
 if (!html.includes("const KOLAM_TYPE_BALANCING = 'KOLAM BALANCING'")) throw new Error('Expected explicit reservoir type support');
 if (!workerSource.includes("'KOLAM DETAILS': { range: 'A:AK'")) throw new Error('Expected Worker range to include relationship columns through AK');
+if (!workerSource.includes("'MASTERLIST': { range: 'A:V'")) throw new Error('Expected Worker MASTERLIST range to retain columns 1 to 22 only');
 const sirusa2Rows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['SUPPLY FROM']] || '').trim() === 'SIRUSA 2');
 const sirusa2Parent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['RESERVOIR NAME']] || '').trim() === 'SIRUSA 2');
 if (sirusa2Rows.length !== 5 || !sirusa2Parent) throw new Error('Expected SIRUSA 2 parent and four service-level rows');

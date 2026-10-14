@@ -49,11 +49,15 @@
         #kolam-sheet-table tbody tr.kolam-balancing-row .sheet-col-0, #kolam-sheet-table tbody tr.kolam-balancing-row .sheet-col-1 { background: #e9d5ff; }
         #kolam-sheet-table { zoom: var(--kolam-zoom, 1); }
         #masterlist-sheet-table { zoom: var(--masterlist-zoom, 1); }
+        #masterlist-sheet-table .sheet-sequence { position: sticky; left: 0; z-index: 13; min-width: 58px; max-width: 58px; text-align: center; font-weight: 800; color: #475569; background: white; }
         #masterlist-sheet-table .masterlist-frozen { position: sticky; z-index: 12; background: white; }
-        #masterlist-sheet-table .masterlist-freeze-0 { left: 0; min-width: 190px; max-width: 190px; }
-        #masterlist-sheet-table .masterlist-freeze-1 { left: 190px; min-width: 170px; max-width: 170px; }
-        #masterlist-sheet-table .masterlist-freeze-2 { left: 360px; min-width: 220px; max-width: 220px; }
-        #masterlist-sheet-table .masterlist-freeze-3 { left: 580px; min-width: 220px; max-width: 220px; box-shadow: 3px 0 7px rgba(15, 23, 42, .14); }
+        #masterlist-sheet-table .masterlist-freeze-0 { left: 58px; min-width: 190px; max-width: 190px; }
+        #masterlist-sheet-table .masterlist-freeze-1 { left: 248px; min-width: 170px; max-width: 170px; }
+        #masterlist-sheet-table .masterlist-freeze-2 { left: 418px; min-width: 220px; max-width: 220px; }
+        #masterlist-sheet-table .masterlist-freeze-3 { left: 638px; min-width: 220px; max-width: 220px; box-shadow: 3px 0 7px rgba(15, 23, 42, .14); }
+        #masterlist-sheet-table thead .sheet-sequence { z-index: 32; color: white; background: #14543f; }
+        #masterlist-sheet-table thead tr.sheet-filter-row .sheet-sequence { z-index: 31; background: #dcece5; }
+        #masterlist-sheet-table tbody tr:nth-child(even) .sheet-sequence { background: #f1f5f9; }
         #masterlist-sheet-table thead .masterlist-frozen { z-index: 31; background: #14543f; }
         #masterlist-sheet-table thead tr.sheet-filter-row .masterlist-frozen { z-index: 30; background: #dcece5; }
         #masterlist-sheet-table tbody tr:nth-child(even) .masterlist-frozen { background: #f1f5f9; }
@@ -62,6 +66,12 @@
         .sheet-grid td.sheet-editable:hover { background: #eff6ff !important; box-shadow: inset 0 0 0 1px #93c5fd; }
         .sheet-grid td.sheet-editable:focus { background: #dbeafe !important; box-shadow: inset 0 0 0 2px #2563eb; }
         .sheet-grid td.sheet-formula-locked { background: #f1f5f9 !important; color: #64748b; cursor: not-allowed; }
+        .sheet-action-column { position: sticky; right: 0; z-index: 11; min-width: 72px !important; max-width: 72px !important; text-align: center; background: white !important; box-shadow: -2px 0 6px rgba(15, 23, 42, .12); }
+        .sheet-grid thead .sheet-action-column { z-index: 31; background: #14543f !important; }
+        .sheet-grid thead tr.sheet-filter-row .sheet-action-column { z-index: 30; background: #dcece5 !important; }
+        .new-reservoir-input { width: 100%; margin-top: .35rem; border: 1px solid #cbd5e1; border-radius: .7rem; padding: .7rem .8rem; background: white; font-size: .82rem; font-weight: 600; color: #0f172a; outline: none; }
+        .new-reservoir-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .new-reservoir-input:disabled, .new-reservoir-input[readonly] { background: #f1f5f9; color: #64748b; }
         .sheet-grid td.sheet-dirty::after { content: ''; float: right; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; margin: 4px 0 0 6px; }
         .sheet-filter-input { width: 100%; min-width: 120px; border: 1px solid #b6c9bf; border-radius: 5px; padding: 5px 6px; color: #0f172a; background: white; font-size: 10px; outline: none; }
         .sheet-filter-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
@@ -468,11 +478,12 @@
                             <button type="button" data-kolam-zoom="100" onclick="setKolamZoom(100)" class="sheet-zoom-button active border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">100%</button>
                             <button type="button" data-kolam-zoom="125" onclick="setKolamZoom(125)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">125%</button>
                             <button type="button" data-kolam-zoom="150" onclick="setKolamZoom(150)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">150%</button>
+                            <button type="button" data-kolam-zoom="175" onclick="setKolamZoom(175)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">175%</button>
                         </div>
                         <button onclick="toggleSheetFilters('kolam')" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold"><i class="fa-solid fa-filter mr-1"></i> FILTER</button>
                         <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
-                        <button onclick="addKolamRow('balancing')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-100 text-violet-800 hover:bg-violet-200 text-xs font-bold"><i class="fa-solid fa-circle-plus mr-1"></i> KOLAM BALANCING</button>
-                        <button onclick="addKolamRow('service')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> KOLAM SERVIS</button>
+                        <button onclick="openAddReservoirModal('balancing')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-100 text-violet-800 hover:bg-violet-200 text-xs font-bold"><i class="fa-solid fa-circle-plus mr-1"></i> KOLAM BALANCING</button>
+                        <button onclick="openAddReservoirModal('service')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> KOLAM SERVIS</button>
                         <button onclick="saveSheetEdits('kolam')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN</button>
                     </div>
                 </div>
@@ -491,6 +502,7 @@
                             <button type="button" data-masterlist-zoom="100" onclick="setMasterlistZoom(100)" class="sheet-zoom-button active border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">100%</button>
                             <button type="button" data-masterlist-zoom="125" onclick="setMasterlistZoom(125)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">125%</button>
                             <button type="button" data-masterlist-zoom="150" onclick="setMasterlistZoom(150)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">150%</button>
+                            <button type="button" data-masterlist-zoom="175" onclick="setMasterlistZoom(175)" class="sheet-zoom-button border-l border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-100">175%</button>
                         </div>
                         <button onclick="toggleSheetFilters('masterlist')" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold"><i class="fa-solid fa-filter mr-1"></i> FILTER</button>
                         <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
@@ -512,6 +524,53 @@
             <div class="p-5 border-b flex items-center justify-between bg-slate-50"><div><p id="reservoir-detail-kicker" class="text-[10px] uppercase tracking-[.16em] font-bold text-blue-600">Butiran Kolam</p><h2 id="reservoir-detail-title" class="text-xl font-black text-slate-900 mt-1">-</h2></div><button onclick="closeReservoirDetail()" class="w-9 h-9 rounded-full bg-white border hover:bg-slate-100 text-slate-500" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></div>
             <div id="reservoir-detail-content" class="p-5 md:p-6 overflow-y-auto"></div>
             <div id="reservoir-detail-footer" class="hidden shrink-0 border-t bg-white/95 backdrop-blur p-4 flex-wrap justify-end gap-2"></div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH KOLAM -->
+    <div id="add-reservoir-modal" data-html2canvas-ignore="true" class="modal hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div class="p-5 border-b flex items-center justify-between bg-slate-50">
+                <div><p class="text-[10px] uppercase tracking-[.16em] font-bold text-blue-600">Rekod baharu</p><h2 id="add-reservoir-title" class="text-xl font-black text-slate-900 mt-1">Tambah Kolam</h2></div>
+                <button onclick="closeAddReservoirModal()" class="w-9 h-9 rounded-full bg-white border hover:bg-slate-100 text-slate-500" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="add-reservoir-form" class="p-5 md:p-6 overflow-y-auto space-y-5" onsubmit="submitAddReservoir(event)">
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
+                    <p id="add-reservoir-guide" class="font-semibold"></p>
+                    <p class="mt-1 text-blue-700">Kod kolam dijana automatik. Demand harian dikira oleh formula Google Sheet.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label class="text-xs font-bold text-slate-600">NAMA KOLAM *<input id="add-reservoir-name" class="new-reservoir-input" required maxlength="120" autocomplete="off" oninput="updateAddReservoirRelationshipPreview()"></label>
+                    <label class="text-xs font-bold text-slate-600">KOD KOLAM<input id="add-reservoir-code" class="new-reservoir-input" readonly></label>
+                    <label id="add-reservoir-parent-wrap" class="text-xs font-bold text-slate-600">KOLAM BALANCING UTAMA *<select id="add-reservoir-parent" class="new-reservoir-input" onchange="updateAddReservoirRelationshipPreview()"></select></label>
+                    <label class="text-xs font-bold text-slate-600">SUPPLY FROM<input id="add-reservoir-supply" class="new-reservoir-input" readonly></label>
+                    <label class="text-xs font-bold text-slate-600">SECONDARY SUPPLY<select id="add-reservoir-secondary" class="new-reservoir-input"></select></label>
+                    <label id="add-reservoir-outlet-wrap" class="text-xs font-bold text-slate-600">KOD OUTLET *<select id="add-reservoir-outlet" class="new-reservoir-input" onchange="updateAddReservoirOutletPreview()"></select></label>
+                    <label class="text-xs font-bold text-slate-600">DEMAND / BULAN (m³)<input id="add-reservoir-demand" class="new-reservoir-input" inputmode="decimal" placeholder="Contoh: 12000.00"></label>
+                    <label class="text-xs font-bold text-slate-600">JUMLAH SAMBUNGAN<input id="add-reservoir-connections" class="new-reservoir-input" inputmode="numeric"></label>
+                    <label class="text-xs font-bold text-slate-600">KAPASITI (MG)<input id="add-reservoir-capacity" class="new-reservoir-input" inputmode="decimal"></label>
+                    <label class="text-xs font-bold text-slate-600">STATUS<select id="add-reservoir-status" class="new-reservoir-input"><option value="Active">Aktif</option><option value="Inactive">Tidak Aktif</option><option value="Abandoned">Abandoned</option><option value="Demolished">Demolished</option></select></label>
+                    <label class="text-xs font-bold text-slate-600">LAT<input id="add-reservoir-lat" class="new-reservoir-input" inputmode="decimal"></label>
+                    <label class="text-xs font-bold text-slate-600">LONG<input id="add-reservoir-long" class="new-reservoir-input" inputmode="decimal"></label>
+                </div>
+                <div id="add-reservoir-outlet-summary" class="hidden rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs text-violet-900"></div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="flex flex-col md:flex-row gap-4 md:items-center">
+                        <div id="add-reservoir-image-preview" class="w-full md:w-44 aspect-[4/3] rounded-xl border border-dashed border-slate-300 bg-white grid place-items-center text-slate-400 text-xs overflow-hidden"><i class="fa-regular fa-image text-2xl"></i></div>
+                        <div class="flex-1"><p class="text-xs font-black text-slate-700">GAMBAR KOLAM</p><p class="text-[11px] text-slate-500 mt-1">JPG, PNG atau WebP. Dalam sistem hos, gambar akan dimuat naik ke folder Google Drive yang ditetapkan.</p><label class="mt-3 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer"><i class="fa-solid fa-cloud-arrow-up"></i> PILIH GAMBAR<input id="add-reservoir-image" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="previewNewReservoirImage(event)"></label><span id="add-reservoir-image-name" class="ml-3 text-[11px] text-slate-500"></span></div>
+                    </div>
+                </div>
+            </form>
+            <div class="shrink-0 border-t bg-white/95 backdrop-blur p-4 flex justify-end gap-2"><button onclick="closeAddReservoirModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="add-reservoir-submit" type="submit" form="add-reservoir-form" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>TAMBAH KE SENARAI</button></div>
+        </div>
+    </div>
+
+    <!-- MODAL PENGESAHAN PADAM -->
+    <div id="delete-row-modal" data-html2canvas-ignore="true" class="modal hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-5 border-b flex items-center justify-between bg-rose-50"><div><p class="text-[10px] uppercase tracking-[.16em] font-bold text-rose-600">Pengesahan keselamatan</p><h2 class="text-xl font-black text-slate-900 mt-1">Padam rekod</h2></div><button onclick="closeDeleteRowModal()" class="w-9 h-9 rounded-full bg-white border hover:bg-slate-100 text-slate-500" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="p-5 space-y-4"><p class="text-sm text-slate-700">Taip semula nama <strong id="delete-row-name" class="text-rose-700"></strong> untuk mengesahkan.</p><input id="delete-row-confirmation" class="new-reservoir-input" autocomplete="off" oninput="updateDeleteConfirmationState()"><p id="delete-row-warning" class="text-xs text-rose-600"></p></div>
+            <div class="border-t p-4 flex justify-end gap-2"><button onclick="closeDeleteRowModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="delete-row-submit" onclick="confirmDeleteSheetRow()" disabled class="px-4 py-2.5 rounded-xl bg-rose-600 disabled:bg-rose-200 hover:bg-rose-500 text-white text-xs font-bold"><i class="fa-solid fa-trash mr-1"></i>PADAM REKOD</button></div>
         </div>
     </div>
 
@@ -577,6 +636,10 @@
         let sheetFilterVisible = { kolam: true, masterlist: true };
         let sheetFilters = { kolam: {}, masterlist: {} };
         let sheetEdits = { kolam: {}, masterlist: {} };
+        let sheetLoadedRowCounts = { kolam: 0, masterlist: 0 };
+        let activeAddReservoirType = 'KOLAM SERVIS';
+        let pendingNewReservoirImage = null;
+        let pendingDeleteRow = null;
         let demandMap = null; let demandMarkerLayer = null; let demandKmlLayer = null; let demandSecondaryKmlLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
         let demandLayerCounts = { kolam: 0, secondary: 0 }; let reservoirKmlOverrides = {}; let reservoirKmlOverridesLoaded = false; let sidebarCloseTimer = null;
         const kmlTextCache = new Map();
@@ -830,11 +893,16 @@
         }
 
         function isReservoirFormulaHeader(value) { return normalizeHeader(value) === 'DEMAND PER DAY M3'; }
+        function isSheetFormulaLocked(key, header, columnIndex) {
+            if (key === 'kolam') return isReservoirFormulaHeader(header);
+            return key === 'masterlist' && [11, 12, 13].includes(Number(columnIndex));
+        }
 
         const KOLAM_DROPDOWN_HEADERS = new Set(['SUPPLY FROM', 'SECONDARY SUPPLY', 'SERVICE RESERVOIR STATUS', 'STATUS ST', 'JENIS KOLAM', 'KOLAM BALANCING UTAMA', 'KOD OUTLET', 'REKOD DEMAND UTAMA']);
         const MASTERLIST_DROPDOWN_HEADERS = new Set(['LRA', 'KOLAM UTAMA', 'SECONDARY SUPPLY', 'NAMA KOLAM']);
         const MASTERLIST_FROZEN_HEADERS = new Map([['LRA', 0], ['KOLAM UTAMA', 1], ['SECONDARY SUPPLY', 2], ['KAWASAN', 3]]);
         const MASTERLIST_HIDDEN_COLUMN_INDEXES = new Set([0, 22, 23, 24, 25, 26, 27, 28]);
+        const SHEET_ZOOM_LEVELS = [50, 75, 100, 125, 150, 175];
 
         function isReservoirDropdownHeader(value) { return KOLAM_DROPDOWN_HEADERS.has(normalizeHeader(value)); }
         function isMasterlistDropdownHeader(value) { return MASTERLIST_DROPDOWN_HEADERS.has(normalizeHeader(value)); }
@@ -1111,6 +1179,7 @@
             const relationshipTable = ensureReservoirRelationshipColumns(normalizedHeaders, rows);
             reservoirHeaders = relationshipTable.headers;
             reservoirRawRows = relationshipTable.rows;
+            sheetLoadedRowCounts.kolam = reservoirRawRows.length;
             reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(r => String(r.name || '').trim());
             reservoirDataLoaded = true;
             restoreLocalSheetDraft('kolam'); populateDemandFilters(); applyDemandFilters(); renderSheetTable('kolam');
@@ -1157,6 +1226,7 @@
         function ingestMasterlistPayload(payload, explicitHeaders) {
             const table = unpackSheetPayload(payload, explicitHeaders, MASTERLIST_FALLBACK_HEADERS);
             masterlistHeaders = table.headers; masterlistRawRows = table.rows; masterlistDataLoaded = true;
+            sheetLoadedRowCounts.masterlist = masterlistRawRows.length;
             restoreLocalSheetDraft('masterlist'); renderSheetTable('masterlist');
         }
 
@@ -1230,14 +1300,14 @@
         }
 
         function setMasterlistZoom(percent) {
-            const zoom = [50, 75, 100, 125, 150].includes(Number(percent)) ? Number(percent) : 100;
+            const zoom = SHEET_ZOOM_LEVELS.includes(Number(percent)) ? Number(percent) : 100;
             const table = document.getElementById('masterlist-sheet-table');
             if (table) table.style.setProperty('--masterlist-zoom', String(zoom / 100));
             document.querySelectorAll('[data-masterlist-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.masterlistZoom) === zoom));
         }
 
         function setKolamZoom(percent) {
-            const zoom = [50, 75, 100, 125, 150].includes(Number(percent)) ? Number(percent) : 100;
+            const zoom = SHEET_ZOOM_LEVELS.includes(Number(percent)) ? Number(percent) : 100;
             const table = document.getElementById('kolam-sheet-table');
             if (table) table.style.setProperty('--kolam-zoom', String(zoom / 100));
             document.querySelectorAll('[data-kolam-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.kolamZoom) === zoom));
@@ -1250,20 +1320,37 @@
                 const query = String(filters[colIndex] || '').trim().toLowerCase();
                 return !query || String(item.row[colIndex] ?? '').toLowerCase().includes(query);
             }));
+            if (key === 'kolam') {
+                const balancingOrder = new Map(reservoirRows.filter(isBalancingReservoir).map((record, index) => [canonicalStatusValue(record.reservoirCode), index]));
+                visibleRows.sort((left, right) => {
+                    const a = makeReservoirRecord(state.headers, left.row, left.rowIndex), b = makeReservoirRecord(state.headers, right.row, right.rowIndex);
+                    const aGroup = canonicalStatusValue(isBalancingReservoir(a) ? a.reservoirCode : a.balancingParentCode);
+                    const bGroup = canonicalStatusValue(isBalancingReservoir(b) ? b.reservoirCode : b.balancingParentCode);
+                    const groupDifference = (balancingOrder.get(aGroup) ?? 9999) - (balancingOrder.get(bGroup) ?? 9999);
+                    if (groupDifference) return groupDifference;
+                    if (isBalancingReservoir(a) !== isBalancingReservoir(b)) return isBalancingReservoir(a) ? -1 : 1;
+                    return left.rowIndex - right.rowIndex;
+                });
+            }
             const editable = userLevel === 'admin';
             const visibleColumnIndexes = visibleSheetColumnIndexes(key, state);
+            const sequenceHeader = key === 'masterlist' ? '<th class="sheet-sequence">NO.</th>' : '';
+            const sequenceFilter = key === 'masterlist' ? '<th class="sheet-sequence"></th>' : '';
             const headerHtml = visibleColumnIndexes.map(index => {
                 const header = state.headers[index];
-                const locked = key === 'kolam' && isReservoirFormulaHeader(header);
+                const locked = isSheetFormulaLocked(key, header, index);
                 return `<th class="${sheetColumnClass(key, header, index)}">${escapeHtml(header || `COLUMN ${index + 1}`)}${locked ? ' <i class="fa-solid fa-lock text-amber-300 ml-1" title="Formula Google Sheet dikunci"></i>' : ''}</th>`;
             }).join('');
             const filterHtml = visibleColumnIndexes.map(index => `<th class="${sheetColumnClass(key, state.headers[index], index)}"><input class="sheet-filter-input" value="${escapeHtml(filters[index] || '')}" onchange="updateSheetFilter('${key}', ${index}, this.value)" placeholder="Filter..."></th>`).join('');
-            const bodyHtml = visibleRows.length ? visibleRows.map(item => {
+            const bodyHtml = visibleRows.length ? visibleRows.map((item, displayIndex) => {
                 const record = key === 'kolam' ? makeReservoirRecord(state.headers, item.row, item.rowIndex) : null;
                 const rowClass = record && isBalancingReservoir(record) ? 'kolam-balancing-row' : '';
-                return `<tr class="${rowClass}">${visibleColumnIndexes.map(colIndex => {
+                const sequenceCell = key === 'masterlist' ? `<td class="sheet-sequence" title="Baris ${state.headerRow + 1 + item.rowIndex}">${displayIndex + 1}</td>` : '';
+                const deleteLabel = sheetDeleteIdentity(key, item.row, item.rowIndex);
+                const deleteCell = `<td class="sheet-action-column">${editable ? `<button type="button" onclick="openDeleteRowModal('${key}', ${item.rowIndex})" class="w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-50" title="Padam ${escapeHtml(deleteLabel.name)}" aria-label="Padam ${escapeHtml(deleteLabel.name)}"><i class="fa-solid fa-trash-can"></i></button>` : '<i class="fa-solid fa-lock text-slate-300"></i>'}</td>`;
+                return `<tr class="${rowClass}">${sequenceCell}${visibleColumnIndexes.map(colIndex => {
                 const dirty = Object.prototype.hasOwnProperty.call(sheetEdits[key], `${item.rowIndex}:${colIndex}`);
-                const formulaLocked = key === 'kolam' && isReservoirFormulaHeader(state.headers[colIndex]);
+                const formulaLocked = isSheetFormulaLocked(key, state.headers[colIndex], colIndex);
                 const relationshipLocked = key === 'kolam' && record && isBalancingReservoir(record) && normalizeHeader(state.headers[colIndex]) === 'KOLAM BALANCING UTAMA';
                 const cellEditable = editable && !formulaLocked && !relationshipLocked;
                 const dropdown = cellEditable && ((key === 'kolam' && isReservoirDropdownHeader(state.headers[colIndex])) || (key === 'masterlist' && isMasterlistDropdownHeader(state.headers[colIndex])));
@@ -1273,9 +1360,9 @@
                     return `<td class="${classes}" title="Pilihan diselaraskan daripada Google Sheet"><select class="sheet-cell-select" aria-label="${escapeHtml(state.headers[colIndex])}" onchange="editSheetDropdown('${key}', ${item.rowIndex}, ${colIndex}, this)">${options}</select></td>`;
                 }
                 return `<td class="${classes}" ${cellEditable ? 'contenteditable="true" spellcheck="false"' : ''} title="${formulaLocked ? 'Formula Google Sheet dikunci' : escapeHtml(item.row[colIndex] ?? '')}" ${cellEditable ? `onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)"` : ''}>${escapeHtml(item.row[colIndex] ?? '')}${formulaLocked ? ' <i class="fa-solid fa-lock text-[9px] text-slate-400 ml-1"></i>' : ''}</td>`;
-                }).join('')}</tr>`;
-            }).join('') : `<tr><td colspan="${Math.max(1, visibleColumnIndexes.length)}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
-            table.innerHTML = `<thead><tr>${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
+                }).join('')}${deleteCell}</tr>`;
+            }).join('') : `<tr><td colspan="${Math.max(1, visibleColumnIndexes.length + (key === 'masterlist' ? 2 : 1))}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
+            table.innerHTML = `<thead><tr>${sequenceHeader}${headerHtml}<th class="sheet-action-column">TINDAKAN</th></tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${sequenceFilter}${filterHtml}<th class="sheet-action-column"></th></tr></thead><tbody>${bodyHtml}</tbody>`;
             if (key === 'kolam') setKolamZoom(Number(document.querySelector('[data-kolam-zoom].active')?.dataset.kolamZoom || 100));
             if (key === 'masterlist') setMasterlistZoom(Number(document.querySelector('[data-masterlist-zoom].active')?.dataset.masterlistZoom || 100));
             document.getElementById(`${key}-sheet-count`).innerText = `${visibleRows.length.toLocaleString()} / ${state.rows.length.toLocaleString()} rekod`;
@@ -1286,12 +1373,13 @@
 
         function editSheetCell(key, rowIndex, columnIndex, cell) {
             if (userLevel !== 'admin') return;
-            const state = sheetState(key); if (key === 'kolam' && isReservoirFormulaHeader(state.headers[columnIndex])) return;
+            const state = sheetState(key); if (isSheetFormulaLocked(key, state.headers[columnIndex], columnIndex)) return;
             updateSheetCellValue(key, rowIndex, columnIndex, cell.innerText.trim(), cell);
         }
 
         function editSheetDropdown(key, rowIndex, columnIndex, select) {
             if (userLevel !== 'admin') return;
+            const state = sheetState(key); if (isSheetFormulaLocked(key, state.headers[columnIndex], columnIndex)) return;
             updateSheetCellValue(key, rowIndex, columnIndex, select.value, select.closest('td'));
             if (key === 'kolam') synchronizeReservoirRelationship(rowIndex, stateHeaderKey(columnIndex));
         }
@@ -1360,23 +1448,182 @@
             if (userLevel !== 'admin') return;
             const state = sheetState(key); if (!state.headers.length) return;
             const newIndex = state.rows.length; state.rows.push(state.headers.map(() => ''));
-            state.headers.forEach((_, columnIndex) => { sheetEdits[key][`${newIndex}:${columnIndex}`] = ''; });
             persistLocalSheetDraft(key); renderSheetTable(key); updateSheetSaveStatus(key);
+            showToast('Baris kosong ditambah. Isi medan yang diperlukan; kolum formula L–N kekal dikunci.');
         }
 
         function addKolamRow(type) {
-            if (userLevel !== 'admin' || !reservoirHeaders.length) return;
-            const reservoirType = type === 'balancing' ? KOLAM_TYPE_BALANCING : KOLAM_TYPE_SERVICE;
-            const newIndex = reservoirRawRows.length;
-            reservoirRawRows.push(reservoirHeaders.map(() => ''));
-            setReservoirCell(newIndex, 'KOD KOLAM', nextReservoirCode(reservoirType));
-            setReservoirCell(newIndex, 'JENIS KOLAM', reservoirType);
-            if (reservoirType === KOLAM_TYPE_SERVICE) {
-                setReservoirCell(newIndex, 'KOD OUTLET', nextOutletCode());
-                setReservoirCell(newIndex, 'REKOD DEMAND UTAMA', 'YA');
+            openAddReservoirModal(type);
+        }
+
+        function selectOptionsHtml(values, selected = '', emptyLabel = '- Tiada pilihan -') {
+            return `<option value="">${escapeHtml(emptyLabel)}</option>` + values.map(value => `<option value="${escapeHtml(value)}" ${canonicalStatusValue(value) === canonicalStatusValue(selected) ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('');
+        }
+
+        function openAddReservoirModal(type = 'service') {
+            if (userLevel !== 'admin' || !reservoirHeaders.length) { showToast('Data KOLAM DETAILS belum sedia.', true); return; }
+            activeAddReservoirType = type === 'balancing' ? KOLAM_TYPE_BALANCING : KOLAM_TYPE_SERVICE;
+            pendingNewReservoirImage = null;
+            document.getElementById('add-reservoir-form').reset();
+            const isBalancing = activeAddReservoirType === KOLAM_TYPE_BALANCING;
+            const code = nextReservoirCode(activeAddReservoirType);
+            document.getElementById('add-reservoir-code').value = code;
+            document.getElementById('add-reservoir-title').innerText = isBalancing ? 'Tambah Kolam Balancing' : 'Tambah Kolam Servis';
+            document.getElementById('add-reservoir-guide').innerText = isBalancing
+                ? 'Kolam ini menjadi ibu. Kolam servis boleh dipautkan kepadanya melalui KOD KOLAM.'
+                : 'Pilih kolam balancing ibu. Rekod akan dipaparkan terus di bawah ibu tersebut pada web.';
+            document.getElementById('add-reservoir-parent-wrap').classList.toggle('hidden', isBalancing);
+            document.getElementById('add-reservoir-outlet-wrap').classList.toggle('hidden', isBalancing);
+            const balancing = reservoirRows.filter(isBalancingReservoir);
+            document.getElementById('add-reservoir-parent').innerHTML = balancing.map(record => `<option value="${escapeHtml(record.reservoirCode)}">${escapeHtml(record.reservoirCode)} — ${escapeHtml(record.name)}</option>`).join('');
+            const secondaryValues = reservoirDropdownOptions('SECONDARY SUPPLY');
+            document.getElementById('add-reservoir-secondary').innerHTML = selectOptionsHtml(secondaryValues);
+            const outlets = [...new Set(reservoirRows.filter(record => !isBalancingReservoir(record)).map(record => String(record.outletCode || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ms'));
+            document.getElementById('add-reservoir-outlet').innerHTML = `<option value="__NEW__">Cipta outlet baharu — ${escapeHtml(nextOutletCode())}</option>` + outlets.map(codeValue => { const members = reservoirRows.filter(record => canonicalStatusValue(record.outletCode) === canonicalStatusValue(codeValue)); return `<option value="${escapeHtml(codeValue)}">${escapeHtml(codeValue)} — ${members.length} kolam</option>`; }).join('');
+            document.getElementById('add-reservoir-image-preview').innerHTML = '<i class="fa-regular fa-image text-2xl"></i>';
+            document.getElementById('add-reservoir-image-name').innerText = '';
+            document.getElementById('add-reservoir-outlet-summary').classList.toggle('hidden', isBalancing);
+            updateAddReservoirRelationshipPreview(); updateAddReservoirOutletPreview();
+            document.getElementById('add-reservoir-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('add-reservoir-name').focus(), 50);
+        }
+
+        function closeAddReservoirModal() {
+            document.getElementById('add-reservoir-modal').classList.add('hidden'); document.body.style.overflow = '';
+            pendingNewReservoirImage = null;
+        }
+
+        function updateAddReservoirRelationshipPreview() {
+            const name = String(document.getElementById('add-reservoir-name')?.value || '').trim();
+            if (activeAddReservoirType === KOLAM_TYPE_BALANCING) { document.getElementById('add-reservoir-supply').value = name; return; }
+            const code = document.getElementById('add-reservoir-parent').value;
+            const parent = reservoirRows.find(record => canonicalStatusValue(record.reservoirCode) === canonicalStatusValue(code));
+            document.getElementById('add-reservoir-supply').value = parent?.name || '';
+        }
+
+        function updateAddReservoirOutletPreview() {
+            if (activeAddReservoirType === KOLAM_TYPE_BALANCING) return;
+            const selected = document.getElementById('add-reservoir-outlet').value;
+            const box = document.getElementById('add-reservoir-outlet-summary');
+            if (selected === '__NEW__') { box.innerHTML = `<strong>${escapeHtml(nextOutletCode())}</strong> akan dicipta. Kolam ini menjadi rekod demand utama (YA).`; return; }
+            const members = reservoirRows.filter(record => canonicalStatusValue(record.outletCode) === canonicalStatusValue(selected));
+            const primary = members.find(record => record.isDemandPrimary);
+            box.innerHTML = `<strong>${escapeHtml(selected)}</strong> dikongsi oleh ${members.length} kolam: ${members.map(record => escapeHtml(record.name)).join(', ')}.<br>${primary ? `Demand kekal direkod sekali pada <strong>${escapeHtml(primary.name)}</strong>; rekod baharu ditetapkan TIDAK.` : 'Tiada rekod utama; kolam baharu akan ditetapkan YA.'}`;
+        }
+
+        async function previewNewReservoirImage(event) {
+            const file = event.target.files?.[0]; if (!file) return;
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) { event.target.value = ''; showToast('Gambar mesti JPG, PNG atau WebP dan tidak melebihi 5 MB.', true); return; }
+            const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+            pendingNewReservoirImage = { file, dataUrl };
+            document.getElementById('add-reservoir-image-preview').innerHTML = `<img src="${dataUrl}" alt="Pratonton gambar" class="w-full h-full object-cover">`;
+            document.getElementById('add-reservoir-image-name').innerText = file.name;
+        }
+
+        async function uploadNewReservoirImage(name, code) {
+            if (!pendingNewReservoirImage) return '';
+            if (IS_LOCAL_PREVIEW) return pendingNewReservoirImage.dataUrl;
+            const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'uploadReservoirImage', reservoirName: name, reservoirCode: code, fileName: pendingNewReservoirImage.file.name, dataUrl: pendingNewReservoirImage.dataUrl }) });
+            const result = await response.json(); if (!response.ok || !result.success) throw new Error(result.error || 'Gambar gagal dimuat naik ke Google Drive.');
+            return result.webViewLink || result.imageUrl || '';
+        }
+
+        async function submitAddReservoir(event) {
+            event.preventDefault();
+            const name = String(document.getElementById('add-reservoir-name').value || '').trim();
+            const code = document.getElementById('add-reservoir-code').value;
+            if (!name) { showToast('Nama kolam diperlukan.', true); return; }
+            if (reservoirRows.some(record => canonicalReservoirName(record.name) === canonicalReservoirName(name))) { showToast('Nama kolam ini sudah wujud.', true); return; }
+            const isBalancing = activeAddReservoirType === KOLAM_TYPE_BALANCING;
+            const parentCode = isBalancing ? '' : document.getElementById('add-reservoir-parent').value;
+            const parent = reservoirRows.find(record => canonicalStatusValue(record.reservoirCode) === canonicalStatusValue(parentCode));
+            if (!isBalancing && !parent) { showToast('Pilih Kolam Balancing Utama.', true); return; }
+            let outletCode = '';
+            let demandPrimary = '';
+            if (!isBalancing) {
+                const outletSelection = document.getElementById('add-reservoir-outlet').value;
+                outletCode = outletSelection === '__NEW__' ? nextOutletCode() : outletSelection;
+                const primaryExists = reservoirRows.some(record => canonicalStatusValue(record.outletCode) === canonicalStatusValue(outletCode) && record.isDemandPrimary);
+                demandPrimary = primaryExists ? 'TIDAK' : 'YA';
             }
-            persistLocalSheetDraft('kolam'); renderSheetTable('kolam'); updateSheetSaveStatus('kolam');
-            showToast(`${reservoirType} baharu ditambah. Lengkapkan nama${reservoirType === KOLAM_TYPE_SERVICE ? ' dan pilih Kolam Balancing Utama' : ''}, kemudian tekan SIMPAN.`);
+            const submit = document.getElementById('add-reservoir-submit'); submit.disabled = true; submit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>MENYEDIAKAN...';
+            try {
+                const image = await uploadNewReservoirImage(name, code);
+                const newIndex = reservoirRawRows.length; reservoirRawRows.push(reservoirHeaders.map(() => ''));
+                const values = {
+                    'RESERVOIR NAME': name, 'SUPPLY FROM': isBalancing ? name : parent.name,
+                    'SECONDARY SUPPLY': document.getElementById('add-reservoir-secondary').value,
+                    'DEMAND PER MONTH (M3)': document.getElementById('add-reservoir-demand').value.trim(),
+                    'TOTAL CONNECTION': document.getElementById('add-reservoir-connections').value.trim(),
+                    'CAPACITY (MG)': document.getElementById('add-reservoir-capacity').value.trim(),
+                    'SERVICE RESERVOIR STATUS': document.getElementById('add-reservoir-status').value,
+                    'LAT': document.getElementById('add-reservoir-lat').value.trim(), 'LONG': document.getElementById('add-reservoir-long').value.trim(),
+                    'GAMBAR KOLAM SERVIS': image, 'KOD KOLAM': code, 'JENIS KOLAM': activeAddReservoirType,
+                    'KOLAM BALANCING UTAMA': parentCode, 'KOD OUTLET': outletCode, 'REKOD DEMAND UTAMA': demandPrimary
+                };
+                Object.entries(values).forEach(([header, value]) => { if (String(value || '').trim()) setReservoirCell(newIndex, header, value); });
+                reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(record => String(record.name || '').trim());
+                persistLocalSheetDraft('kolam'); renderSheetTable('kolam'); updateSheetSaveStatus('kolam'); populateDemandFilters(); applyDemandFilters(); closeAddReservoirModal();
+                showToast(`${activeAddReservoirType} ${name} ditambah dengan ID ${code}. Tekan SIMPAN untuk menghantar rekod ke Google Sheet.`);
+            } catch (error) { showToast(error.message || 'Rekod gagal disediakan.', true); }
+            finally { submit.disabled = false; submit.innerHTML = '<i class="fa-solid fa-plus mr-1"></i>TAMBAH KE SENARAI'; }
+        }
+
+        function sheetDeleteIdentity(key, row, rowIndex) {
+            if (key === 'kolam') return { name: String(row[0] || '').trim() || `Baris ${rowIndex + 2}`, column: 1 };
+            const preferred = [['NAMA KOLAM', 15], ['KAWASAN', 5], ['KOLAM UTAMA', 3]];
+            for (const [header, fallbackColumn] of preferred) {
+                const index = masterlistHeaders.findIndex(value => normalizeHeader(value) === header);
+                if (index >= 0 && String(row[index] || '').trim()) return { name: String(row[index]).trim(), column: index + 1 };
+                if (fallbackColumn - 1 < row.length && String(row[fallbackColumn - 1] || '').trim()) return { name: String(row[fallbackColumn - 1]).trim(), column: fallbackColumn };
+            }
+            return { name: `Baris ${rowIndex + 4}`, column: 2 };
+        }
+
+        function openDeleteRowModal(key, rowIndex) {
+            if (userLevel !== 'admin') return;
+            if (Object.keys(sheetEdits[key]).length) { showToast('Simpan perubahan semasa dahulu sebelum memadam rekod.', true); return; }
+            const state = sheetState(key), row = state.rows[rowIndex]; if (!row) return;
+            if (key === 'kolam') {
+                const record = makeReservoirRecord(state.headers, row, rowIndex);
+                if (isBalancingReservoir(record)) {
+                    const children = reservoirRows.filter(child => canonicalStatusValue(child.balancingParentCode) === canonicalStatusValue(record.reservoirCode));
+                    if (children.length) { showToast(`Tidak boleh padam ${record.name}. Pindahkan atau padam ${children.length} kolam servis anak dahulu.`, true); return; }
+                }
+            }
+            const identity = sheetDeleteIdentity(key, row, rowIndex);
+            pendingDeleteRow = { key, rowIndex, name: identity.name, confirmColumn: identity.column, sheetRow: state.headerRow + 1 + rowIndex };
+            document.getElementById('delete-row-name').innerText = identity.name;
+            document.getElementById('delete-row-confirmation').value = '';
+            document.getElementById('delete-row-warning').innerText = key === 'kolam' ? 'Tindakan ini turut membuang hubungan, lokasi dan data teknikal kolam.' : 'Tindakan ini membuang satu baris MASTERLIST.';
+            updateDeleteConfirmationState(); document.getElementById('delete-row-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('delete-row-confirmation').focus(), 50);
+        }
+
+        function updateDeleteConfirmationState() {
+            const input = String(document.getElementById('delete-row-confirmation')?.value || '').trim();
+            document.getElementById('delete-row-submit').disabled = !pendingDeleteRow || canonicalReservoirName(input) !== canonicalReservoirName(pendingDeleteRow.name);
+        }
+
+        function closeDeleteRowModal() { document.getElementById('delete-row-modal').classList.add('hidden'); document.body.style.overflow = ''; pendingDeleteRow = null; }
+
+        async function confirmDeleteSheetRow() {
+            if (!pendingDeleteRow || document.getElementById('delete-row-submit').disabled) return;
+            const target = { ...pendingDeleteRow }, state = sheetState(target.key), button = document.getElementById('delete-row-submit');
+            button.disabled = true; button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>MEMADAM...';
+            try {
+                if (!IS_LOCAL_PREVIEW && target.rowIndex < sheetLoadedRowCounts[target.key]) {
+                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'deleteSheetRow', sheetName: state.sheetName, row: target.sheetRow, confirmColumn: target.confirmColumn, confirmName: target.name }) });
+                    const result = await response.json(); if (!response.ok || !result.success) throw new Error(result.error || 'Rekod gagal dipadam.');
+                }
+                state.rows.splice(target.rowIndex, 1);
+                if (target.rowIndex < sheetLoadedRowCounts[target.key]) sheetLoadedRowCounts[target.key] -= 1;
+                if (target.key === 'kolam') reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(record => String(record.name || '').trim());
+                persistLocalSheetDraft(target.key); renderSheetTable(target.key); updateSheetSaveStatus(target.key, IS_LOCAL_PREVIEW ? 'Rekod dipadam dalam prototaip lokal' : 'Rekod dipadam dari Google Sheet');
+                closeDeleteRowModal(); if (target.key === 'kolam') { populateDemandFilters(); applyDemandFilters(); }
+                showToast(`${target.name} telah dipadam${IS_LOCAL_PREVIEW ? ' daripada prototaip lokal' : ' daripada Google Sheet'}.`);
+            } catch (error) { showToast(error.message || 'Rekod gagal dipadam.', true); }
+            finally { button.disabled = false; button.innerHTML = '<i class="fa-solid fa-trash mr-1"></i>PADAM REKOD'; }
         }
 
         function updateSheetSaveStatus(key, text) {
@@ -1713,7 +1960,7 @@
         }
 
         function imageUrl(value) {
-            const raw = String(value || '').trim(); if (!/^https?:\/\//i.test(raw)) return '';
+            const raw = String(value || '').trim(); if (/^data:image\//i.test(raw)) return raw; if (!/^https?:\/\//i.test(raw)) return '';
             const driveId = raw.match(/\/d\/([\w-]+)/)?.[1] || raw.match(/[?&]id=([\w-]+)/)?.[1];
             return driveId ? `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000` : raw;
         }

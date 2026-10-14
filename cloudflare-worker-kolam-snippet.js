@@ -9,6 +9,12 @@
  *      case 'updateSheetCells':
  *        // IMPORTANT: run the existing admin-token check before this line.
  *        return jsonResponse(await updateSheetCells(body, env));
+ *      case 'deleteSheetRow':
+ *        // IMPORTANT: run the existing admin-token check before this line.
+ *        return jsonResponse(await deleteSheetRow(body, env));
+ *      case 'uploadReservoirImage':
+ *        // IMPORTANT: run the existing admin-token check before this line.
+ *        return jsonResponse(await uploadReservoirImage(body, env));
  *      case 'getReservoirKmlOverrides':
  *        return jsonResponse(await getReservoirKmlOverrides(env));
  *      case 'saveReservoirKml':
@@ -17,7 +23,9 @@
  *
  * 2. Copy the functions below into the same Worker source.
  * 3. Keep the existing GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, SHEET_ID and
- *    optional GAS_CACHE bindings. No secret belongs in this repository.
+ *    optional GAS_CACHE bindings. For image uploads, set DRIVE_FOLDER_ID and
+ *    share that Drive folder with GOOGLE_CLIENT_EMAIL as Editor. No secret
+ *    belongs in this repository.
  */
 
 async function getReservoirData(body, env) {
@@ -49,7 +57,8 @@ async function getReservoirData(body, env) {
 
 const EDITABLE_SHEETS = {
   'KOLAM DETAILS': { range: 'A:AK', headerRow: 1 },
-  'MASTERLIST': { range: 'A:S', headerRow: 3 }
+  // Columns W:AC (23-29) are intentionally excluded from the web table.
+  'MASTERLIST': { range: 'A:V', headerRow: 3 }
 };
 
 async function getSheetTable(body, env) {
@@ -86,11 +95,13 @@ async function updateSheetCells(body, env) {
   if (!updates.length || updates.length > 500) throw new Error('Senarai perubahan tidak sah.');
   const data = updates.map(update => {
     const row = Number(update.row), column = Number(update.column);
-    const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 19;
+    const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 22;
     if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || column > maxColumn) throw new Error('Alamat sel tidak sah.');
+    if ((sheetName === 'KOLAM DETAILS' && column === 5) || (sheetName === 'MASTERLIST' && [12, 13, 14].includes(column))) throw new Error('Kolum formula tidak boleh diedit melalui web.');
     return { range: `'${sheetName}'!${columnToLetter(column)}${row}`, values: [[update.value ?? '']] };
   });
   const accessToken = await getGoogleAccessToken(env);
+  await prepareNewSheetRows(sheetName, updates, accessToken, env);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values:batchUpdate`;
   const response = await fetch(url, {
     method: 'POST',
@@ -98,13 +109,94 @@ async function updateSheetCells(body, env) {
     body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data })
   });
   if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
-  if (env.GAS_CACHE) {
-    await Promise.all([
-      env.GAS_CACHE.delete(`sheet-table:${sheetName}:v1`),
-      sheetName === 'KOLAM DETAILS' ? env.GAS_CACHE.delete('kolam-details:v1') : Promise.resolve()
-    ]);
-  }
+  await clearSheetCaches(sheetName, env);
   return { success: true, updatedCells: data.length };
+}
+
+async function prepareNewSheetRows(sheetName, updates, accessToken, env) {
+  const config = EDITABLE_SHEETS[sheetName];
+  const anchorColumn = sheetName === 'KOLAM DETAILS' ? 'A' : 'B';
+  const valuesUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values/${encodeURIComponent(`'${sheetName}'!${anchorColumn}:${anchorColumn}`)}?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE`;
+  const valuesResponse = await fetch(valuesUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!valuesResponse.ok) throw new Error(`Google Sheets API ${valuesResponse.status}: ${await valuesResponse.text()}`);
+  const values = (await valuesResponse.json()).values || [];
+  const lastPopulatedRow = Math.max(config.headerRow, values.length);
+  const targetRows = [...new Set(updates.map(update => Number(update.row)).filter(row => row > lastPopulatedRow))].sort((a, b) => a - b);
+  if (!targetRows.length) return;
+
+  const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}?fields=sheets.properties`;
+  const metaResponse = await fetch(metaUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!metaResponse.ok) throw new Error(`Google Sheets API ${metaResponse.status}: ${await metaResponse.text()}`);
+  const sheet = (await metaResponse.json()).sheets?.find(item => String(item.properties?.title || '').toUpperCase() === sheetName);
+  if (!sheet) throw new Error('Metadata sheet tidak ditemui.');
+  const sheetId = sheet.properties.sheetId, columnCount = sheetName === 'KOLAM DETAILS' ? 37 : 22;
+  const requests = [];
+  const maxTarget = Math.max(...targetRows);
+  if (maxTarget > Number(sheet.properties.gridProperties?.rowCount || 0)) requests.push({ appendDimension: { sheetId, dimension: 'ROWS', length: maxTarget - Number(sheet.properties.gridProperties?.rowCount || 0) } });
+  for (const row of targetRows) {
+    const sourceStart = Math.max(config.headerRow, lastPopulatedRow) - 1, targetStart = row - 1;
+    for (const pasteType of ['PASTE_FORMAT', 'PASTE_DATA_VALIDATION', 'PASTE_FORMULA']) {
+      requests.push({ copyPaste: { source: { sheetId, startRowIndex: sourceStart, endRowIndex: sourceStart + 1, startColumnIndex: 0, endColumnIndex: columnCount }, destination: { sheetId, startRowIndex: targetStart, endRowIndex: targetStart + 1, startColumnIndex: 0, endColumnIndex: columnCount }, pasteType, pasteOrientation: 'NORMAL' } });
+    }
+    if (sheetName === 'KOLAM DETAILS') {
+      const type = String(updates.find(update => Number(update.row) === row && Number(update.column) === 34)?.value || '').toUpperCase();
+      const balancing = type === 'KOLAM BALANCING';
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: targetStart, endRowIndex: targetStart + 1, startColumnIndex: 0, endColumnIndex: columnCount }, cell: { userEnteredFormat: { backgroundColorStyle: { rgbColor: balancing ? { red: 0.698, green: 0.631, blue: 0.780 } : { red: 1, green: 1, blue: 1 } }, textFormat: { bold: balancing } } }, fields: 'userEnteredFormat(backgroundColorStyle,textFormat.bold)' } });
+    }
+  }
+  const prepareResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}:batchUpdate`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ requests }) });
+  if (!prepareResponse.ok) throw new Error(`Google Sheets API ${prepareResponse.status}: ${await prepareResponse.text()}`);
+}
+
+async function deleteSheetRow(body, env) {
+  const sheetName = String(body?.sheetName || '').trim().toUpperCase();
+  const config = EDITABLE_SHEETS[sheetName];
+  if (!config) throw new Error('Sheet tidak dibenarkan.');
+  const row = Number(body?.row), confirmColumn = Number(body?.confirmColumn), confirmName = String(body?.confirmName || '').trim();
+  const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 22;
+  if (!Number.isInteger(row) || row <= config.headerRow || !Number.isInteger(confirmColumn) || confirmColumn < 1 || confirmColumn > maxColumn || !confirmName) throw new Error('Pengesahan baris tidak sah.');
+  const accessToken = await getGoogleAccessToken(env);
+  const confirmRange = encodeURIComponent(`'${sheetName}'!${columnToLetter(confirmColumn)}${row}`);
+  const verifyResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values/${confirmRange}?valueRenderOption=FORMATTED_VALUE`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!verifyResponse.ok) throw new Error(`Google Sheets API ${verifyResponse.status}: ${await verifyResponse.text()}`);
+  const actual = String((await verifyResponse.json()).values?.[0]?.[0] || '').replace(/\s+/g, ' ').trim().toUpperCase();
+  if (actual !== confirmName.replace(/\s+/g, ' ').trim().toUpperCase()) throw new Error('Nama pengesahan tidak sepadan dengan rekod Google Sheet. Muat semula data dan cuba lagi.');
+  const metaResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}?fields=sheets.properties`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!metaResponse.ok) throw new Error(`Google Sheets API ${metaResponse.status}: ${await metaResponse.text()}`);
+  const sheet = (await metaResponse.json()).sheets?.find(item => String(item.properties?.title || '').toUpperCase() === sheetName);
+  if (!sheet) throw new Error('Metadata sheet tidak ditemui.');
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}:batchUpdate`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ requests: [{ deleteDimension: { range: { sheetId: sheet.properties.sheetId, dimension: 'ROWS', startIndex: row - 1, endIndex: row } } }] }) });
+  if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
+  await clearSheetCaches(sheetName, env);
+  return { success: true, deletedRow: row };
+}
+
+async function uploadReservoirImage(body, env) {
+  if (!env.DRIVE_FOLDER_ID) throw new Error('Binding DRIVE_FOLDER_ID belum ditetapkan pada Worker.');
+  const reservoirName = String(body?.reservoirName || '').trim(), reservoirCode = String(body?.reservoirCode || '').trim();
+  const sourceName = String(body?.fileName || '').trim(), dataUrl = String(body?.dataUrl || '');
+  const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/i);
+  if (!reservoirName || !reservoirCode || !sourceName || !match) throw new Error('Maklumat gambar tidak sah.');
+  const bytes = Uint8Array.from(atob(match[2]), character => character.charCodeAt(0));
+  if (!bytes.length || bytes.length > 5 * 1024 * 1024) throw new Error('Saiz gambar mesti antara 1 bait dan 5 MB.');
+  const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
+  const safeBase = `${reservoirCode}-${reservoirName}`.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 100);
+  const fileName = `${safeBase}.${extension}`;
+  const accessToken = await getGoogleAccessToken(env);
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({ name: fileName, parents: [env.DRIVE_FOLDER_ID] })], { type: 'application/json' }));
+  form.append('file', new Blob([bytes], { type: match[1] }), fileName);
+  const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form });
+  if (!uploadResponse.ok) throw new Error(`Google Drive API ${uploadResponse.status}: ${await uploadResponse.text()}`);
+  const file = await uploadResponse.json();
+  const permissionResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}/permissions`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'anyone' }) });
+  if (!permissionResponse.ok) throw new Error(`Gambar dimuat naik tetapi akses paparan gagal: ${await permissionResponse.text()}`);
+  return { success: true, fileId: file.id, fileName: file.name, webViewLink: file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`, imageUrl: `https://drive.google.com/thumbnail?id=${file.id}&sz=w1600` };
+}
+
+async function clearSheetCaches(sheetName, env) {
+  if (!env.GAS_CACHE) return;
+  await Promise.all([env.GAS_CACHE.delete(`sheet-table:${sheetName}:v1`), sheetName === 'KOLAM DETAILS' ? env.GAS_CACHE.delete('kolam-details:v1') : Promise.resolve()]);
 }
 
 async function saveReservoirKml(body, env) {
@@ -151,7 +243,7 @@ async function getGoogleAccessToken(env) {
   const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const claims = base64Url(JSON.stringify({
     iss: env.GOOGLE_CLIENT_EMAIL,
-    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600
