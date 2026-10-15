@@ -92,7 +92,8 @@ if (!html.includes('class="sheet-select-column"') || !html.includes('toggleAllVi
 if (!html.includes('function openSheetContextMenu(') || !html.includes('function sheetClipboardAction(')) throw new Error('Expected spreadsheet right-click menu');
 if (!html.includes('function applySheetFormat(') || !html.includes('sheetRibbonMarkup')) throw new Error('Expected spreadsheet formatting ribbon');
 if (html.includes('sheet-action-column')) throw new Error('Per-row delete action column should be removed');
-if (!html.includes("[11, 12, 13].includes(Number(columnIndex))")) throw new Error('Expected MASTERLIST formula columns L to N to be locked');
+if (!html.includes("normalizeHeader(header) === 'DUPLICATE' || [11, 12, 13].includes(Number(columnIndex))")) throw new Error('Expected MASTERLIST DUPLICATE and formula columns L to N to be locked');
+if (!html.includes('function syncSheetHorizontalScroll(key, source)') || !html.includes('kolam-sheet-scroll-top') || !html.includes('masterlist-sheet-scroll-top')) throw new Error('Expected synchronized horizontal scrollbars for both sheet tables');
 if (!html.includes('class="sheet-sequence">NO.</th>')) throw new Error('Expected MASTERLIST sequence column');
 if (!html.includes("const KOLAM_TYPE_BALANCING = 'KOLAM BALANCING'")) throw new Error('Expected explicit reservoir type support');
 if (!workerSource.includes("'KOLAM DETAILS': { range: 'A:AK'")) throw new Error('Expected Worker range to include relationship columns through AK');

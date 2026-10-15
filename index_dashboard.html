@@ -40,6 +40,13 @@
         .sheet-shell::-webkit-scrollbar-thumb { background: #64748b; border: 3px solid #e2e8f0; border-radius: 999px; }
         .sheet-shell::-webkit-scrollbar-thumb:hover { background: #475569; }
         .sheet-shell::-webkit-scrollbar-corner { background: #e2e8f0; }
+        .sheet-horizontal-scroll { height: 18px; overflow-x: scroll; overflow-y: hidden; scrollbar-width: auto; scrollbar-color: #64748b #e2e8f0; border: 1px solid #cbd5e1; border-bottom: 0; border-radius: .75rem .75rem 0 0; background: #e2e8f0; }
+        .sheet-horizontal-scroll::-webkit-scrollbar { height: 16px; }
+        .sheet-horizontal-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 999px; }
+        .sheet-horizontal-scroll::-webkit-scrollbar-thumb { background: #64748b; border: 3px solid #e2e8f0; border-radius: 999px; }
+        .sheet-horizontal-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .sheet-horizontal-scroll-track { height: 1px; }
+        .sheet-horizontal-scroll + .sheet-shell { border-radius: 0 0 .75rem .75rem; }
         .sheet-grid { border-collapse: separate; border-spacing: 0; min-width: max-content; font-size: 12px; }
         .sheet-grid th, .sheet-grid td { min-width: 150px; max-width: 260px; height: 38px; padding: 7px 9px; border-right: 1px solid #dbe3ee; border-bottom: 1px solid #dbe3ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: white; }
         .sheet-grid thead th { position: sticky; top: 0; z-index: 20; min-height: 44px; height: 44px; background: #176149; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: .025em; white-space: normal; }
@@ -507,7 +514,8 @@
                 </div>
                 <div id="kolam-sheet-notice" class="hidden rounded-lg border p-3 text-xs"></div>
                 <div id="kolam-sheet-ribbon" class="sheet-ribbon admin-only hidden" data-sheet-ribbon="kolam"></div>
-                <div class="sheet-shell"><table id="kolam-sheet-table" class="sheet-grid"></table></div>
+                <div id="kolam-sheet-scroll-top" class="sheet-horizontal-scroll" aria-label="Skrol jadual KOLAM DETAILS ke kiri atau kanan" onscroll="syncSheetHorizontalScroll('kolam', 'top')"><div class="sheet-horizontal-scroll-track"></div></div>
+                <div id="kolam-sheet-shell" class="sheet-shell" onscroll="syncSheetHorizontalScroll('kolam', 'shell')"><table id="kolam-sheet-table" class="sheet-grid"></table></div>
                 <div class="flex items-center justify-between text-xs text-slate-500"><span id="kolam-sheet-count">0 rekod</span><span id="kolam-sheet-save-status">Tiada perubahan</span></div>
             </div>
 
@@ -532,7 +540,8 @@
                 </div>
                 <div id="masterlist-sheet-notice" class="hidden rounded-lg border p-3 text-xs"></div>
                 <div id="masterlist-sheet-ribbon" class="sheet-ribbon admin-only hidden" data-sheet-ribbon="masterlist"></div>
-                <div class="sheet-shell"><table id="masterlist-sheet-table" class="sheet-grid"></table></div>
+                <div id="masterlist-sheet-scroll-top" class="sheet-horizontal-scroll" aria-label="Skrol jadual MASTERLIST ke kiri atau kanan" onscroll="syncSheetHorizontalScroll('masterlist', 'top')"><div class="sheet-horizontal-scroll-track"></div></div>
+                <div id="masterlist-sheet-shell" class="sheet-shell" onscroll="syncSheetHorizontalScroll('masterlist', 'shell')"><table id="masterlist-sheet-table" class="sheet-grid"></table></div>
                 <div class="flex items-center justify-between text-xs text-slate-500"><span id="masterlist-sheet-count">0 rekod</span><span id="masterlist-sheet-save-status">Tiada perubahan</span></div>
             </div>
         </section>
@@ -939,7 +948,7 @@
         function isReservoirFormulaHeader(value) { return normalizeHeader(value) === 'DEMAND PER DAY M3'; }
         function isSheetFormulaLocked(key, header, columnIndex) {
             if (key === 'kolam') return isReservoirFormulaHeader(header);
-            return key === 'masterlist' && [11, 12, 13].includes(Number(columnIndex));
+            return key === 'masterlist' && (normalizeHeader(header) === 'DUPLICATE' || [11, 12, 13].includes(Number(columnIndex)));
         }
 
         const KOLAM_DROPDOWN_HEADERS = new Set(['SUPPLY FROM', 'SECONDARY SUPPLY', 'SERVICE RESERVOIR STATUS', 'STATUS ST', 'JENIS KOLAM', 'KOLAM BALANCING UTAMA', 'KOD OUTLET', 'REKOD DEMAND UTAMA']);
@@ -1381,6 +1390,7 @@
             const table = document.getElementById('masterlist-sheet-table');
             if (table) table.style.setProperty('--masterlist-zoom', String(zoom / 100));
             document.querySelectorAll('[data-masterlist-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.masterlistZoom) === zoom));
+            updateSheetHorizontalScroll('masterlist');
         }
 
         function setKolamZoom(percent) {
@@ -1388,6 +1398,27 @@
             const table = document.getElementById('kolam-sheet-table');
             if (table) table.style.setProperty('--kolam-zoom', String(zoom / 100));
             document.querySelectorAll('[data-kolam-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.kolamZoom) === zoom));
+            updateSheetHorizontalScroll('kolam');
+        }
+
+        function syncSheetHorizontalScroll(key, source) {
+            const shell = document.getElementById(`${key}-sheet-shell`);
+            const top = document.getElementById(`${key}-sheet-scroll-top`);
+            if (!shell || !top) return;
+            if (source === 'top') shell.scrollLeft = top.scrollLeft;
+            else if (Math.abs(top.scrollLeft - shell.scrollLeft) > 1) top.scrollLeft = shell.scrollLeft;
+        }
+
+        function updateSheetHorizontalScroll(key) {
+            requestAnimationFrame(() => {
+                const shell = document.getElementById(`${key}-sheet-shell`);
+                const top = document.getElementById(`${key}-sheet-scroll-top`);
+                const table = document.getElementById(`${key}-sheet-table`);
+                const track = top?.querySelector('.sheet-horizontal-scroll-track');
+                if (!shell || !top || !table || !track) return;
+                track.style.width = `${Math.max(shell.clientWidth, table.scrollWidth)}px`;
+                top.scrollLeft = shell.scrollLeft;
+            });
         }
 
         function sheetCellAddress(rowIndex, columnIndex) { return `${rowIndex}:${columnIndex}`; }
@@ -1481,6 +1512,7 @@
             table.innerHTML = `<thead><tr>${sequenceHeader}${selectionHeader}${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${sequenceFilter}${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
             if (key === 'kolam') setKolamZoom(Number(document.querySelector('[data-kolam-zoom].active')?.dataset.kolamZoom || 100));
             if (key === 'masterlist') setMasterlistZoom(Number(document.querySelector('[data-masterlist-zoom].active')?.dataset.masterlistZoom || 100));
+            updateSheetHorizontalScroll(key);
             document.getElementById(`${key}-sheet-count`).innerText = `${visibleRows.length.toLocaleString()} / ${state.rows.length.toLocaleString()} rekod`;
             updateSelectedRowsUi(key);
         }
