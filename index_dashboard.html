@@ -39,8 +39,11 @@
         .sheet-grid th, .sheet-grid td { min-width: 150px; max-width: 260px; height: 38px; padding: 7px 9px; border-right: 1px solid #dbe3ee; border-bottom: 1px solid #dbe3ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: white; }
         .sheet-grid thead th { position: sticky; top: 0; z-index: 20; min-height: 44px; height: 44px; background: #176149; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: .025em; white-space: normal; }
         .sheet-grid thead tr.sheet-filter-row th { top: 44px; height: 39px; padding: 5px; background: #e8f3ee; z-index: 19; }
-        .sheet-grid .sheet-col-0 { position: sticky; left: 0; z-index: 12; min-width: 170px; max-width: 170px; box-shadow: 1px 0 0 #cbd5e1; }
-        .sheet-grid .sheet-col-1 { position: sticky; left: 170px; z-index: 12; min-width: 170px; max-width: 170px; box-shadow: 2px 0 5px rgba(15, 23, 42, .12); }
+        .sheet-grid .sheet-sequence { position: sticky; left: 0; z-index: 13; min-width: 52px; max-width: 52px; text-align: center; font-weight: 800; color: #475569; background: white; }
+        .sheet-grid .sheet-select-column { position: sticky; left: 52px; z-index: 13; min-width: 46px; max-width: 46px; text-align: center; background: white; }
+        .sheet-grid .sheet-row-checkbox { width: 1rem; height: 1rem; accent-color: #2563eb; cursor: pointer; }
+        .sheet-grid .sheet-col-0 { position: sticky; left: 98px; z-index: 12; min-width: 170px; max-width: 170px; box-shadow: 1px 0 0 #cbd5e1; }
+        .sheet-grid .sheet-col-1 { position: sticky; left: 268px; z-index: 12; min-width: 170px; max-width: 170px; box-shadow: 2px 0 5px rgba(15, 23, 42, .12); }
         .sheet-grid thead .sheet-col-0, .sheet-grid thead .sheet-col-1 { z-index: 30; background: #14543f; }
         .sheet-grid thead tr.sheet-filter-row .sheet-col-0, .sheet-grid thead tr.sheet-filter-row .sheet-col-1 { z-index: 29; background: #dcece5; }
         .sheet-grid tbody tr:nth-child(even) td { background: #f8fafc; }
@@ -49,15 +52,14 @@
         #kolam-sheet-table tbody tr.kolam-balancing-row .sheet-col-0, #kolam-sheet-table tbody tr.kolam-balancing-row .sheet-col-1 { background: #e9d5ff; }
         #kolam-sheet-table { zoom: var(--kolam-zoom, 1); }
         #masterlist-sheet-table { zoom: var(--masterlist-zoom, 1); }
-        #masterlist-sheet-table .sheet-sequence { position: sticky; left: 0; z-index: 13; min-width: 58px; max-width: 58px; text-align: center; font-weight: 800; color: #475569; background: white; }
         #masterlist-sheet-table .masterlist-frozen { position: sticky; z-index: 12; background: white; }
-        #masterlist-sheet-table .masterlist-freeze-0 { left: 58px; min-width: 190px; max-width: 190px; }
-        #masterlist-sheet-table .masterlist-freeze-1 { left: 248px; min-width: 170px; max-width: 170px; }
-        #masterlist-sheet-table .masterlist-freeze-2 { left: 418px; min-width: 220px; max-width: 220px; }
-        #masterlist-sheet-table .masterlist-freeze-3 { left: 638px; min-width: 220px; max-width: 220px; box-shadow: 3px 0 7px rgba(15, 23, 42, .14); }
-        #masterlist-sheet-table thead .sheet-sequence { z-index: 32; color: white; background: #14543f; }
-        #masterlist-sheet-table thead tr.sheet-filter-row .sheet-sequence { z-index: 31; background: #dcece5; }
-        #masterlist-sheet-table tbody tr:nth-child(even) .sheet-sequence { background: #f1f5f9; }
+        #masterlist-sheet-table .masterlist-freeze-0 { left: 98px; min-width: 190px; max-width: 190px; }
+        #masterlist-sheet-table .masterlist-freeze-1 { left: 288px; min-width: 170px; max-width: 170px; }
+        #masterlist-sheet-table .masterlist-freeze-2 { left: 458px; min-width: 220px; max-width: 220px; }
+        #masterlist-sheet-table .masterlist-freeze-3 { left: 678px; min-width: 220px; max-width: 220px; box-shadow: 3px 0 7px rgba(15, 23, 42, .14); }
+        .sheet-grid thead .sheet-sequence, .sheet-grid thead .sheet-select-column { z-index: 32; color: white; background: #14543f; }
+        .sheet-grid thead tr.sheet-filter-row .sheet-sequence, .sheet-grid thead tr.sheet-filter-row .sheet-select-column { z-index: 31; background: #dcece5; }
+        .sheet-grid tbody tr:nth-child(even) .sheet-sequence, .sheet-grid tbody tr:nth-child(even) .sheet-select-column { background: #f1f5f9; }
         #masterlist-sheet-table thead .masterlist-frozen { z-index: 31; background: #14543f; }
         #masterlist-sheet-table thead tr.sheet-filter-row .masterlist-frozen { z-index: 30; background: #dcece5; }
         #masterlist-sheet-table tbody tr:nth-child(even) .masterlist-frozen { background: #f1f5f9; }
@@ -66,9 +68,19 @@
         .sheet-grid td.sheet-editable:hover { background: #eff6ff !important; box-shadow: inset 0 0 0 1px #93c5fd; }
         .sheet-grid td.sheet-editable:focus { background: #dbeafe !important; box-shadow: inset 0 0 0 2px #2563eb; }
         .sheet-grid td.sheet-formula-locked { background: #f1f5f9 !important; color: #64748b; cursor: not-allowed; }
-        .sheet-action-column { position: sticky; right: 0; z-index: 11; min-width: 72px !important; max-width: 72px !important; text-align: center; background: white !important; box-shadow: -2px 0 6px rgba(15, 23, 42, .12); }
-        .sheet-grid thead .sheet-action-column { z-index: 31; background: #14543f !important; }
-        .sheet-grid thead tr.sheet-filter-row .sheet-action-column { z-index: 30; background: #dcece5 !important; }
+        .sheet-grid tr.sheet-row-selected td { background: #dbeafe !important; }
+        .sheet-grid td.sheet-cell-active { box-shadow: inset 0 0 0 2px #2563eb !important; background: #eff6ff !important; }
+        .sheet-ribbon { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .65rem .8rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: linear-gradient(#fff, #f8fafc); box-shadow: 0 1px 3px rgba(15,23,42,.08); }
+        .sheet-ribbon-group { display: inline-flex; align-items: center; gap: .2rem; padding-right: .55rem; margin-right: .2rem; border-right: 1px solid #dbe3ee; }
+        .sheet-ribbon-group:last-child { border-right: 0; }
+        .sheet-ribbon button, .sheet-ribbon select, .sheet-ribbon label { min-height: 32px; border: 1px solid transparent; border-radius: .45rem; padding: .35rem .5rem; color: #334155; background: transparent; font-size: 11px; font-weight: 700; }
+        .sheet-ribbon button:hover, .sheet-ribbon button.active { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+        .sheet-ribbon select { border-color: #cbd5e1; background: white; font-weight: 600; }
+        .sheet-ribbon input[type="color"] { width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+        .sheet-context-menu { position: fixed; z-index: 1400; min-width: 220px; padding: .4rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: white; box-shadow: 0 18px 45px rgba(15,23,42,.24); }
+        .sheet-context-menu button { display: flex; width: 100%; align-items: center; gap: .65rem; padding: .55rem .7rem; border-radius: .5rem; color: #334155; font-size: 12px; text-align: left; }
+        .sheet-context-menu button:hover { background: #eff6ff; color: #1d4ed8; }
+        .sheet-context-menu .danger { color: #e11d48; }
         .new-reservoir-input { width: 100%; margin-top: .35rem; border: 1px solid #cbd5e1; border-radius: .7rem; padding: .7rem .8rem; background: white; font-size: .82rem; font-weight: 600; color: #0f172a; outline: none; }
         .new-reservoir-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
         .new-reservoir-input:disabled, .new-reservoir-input[readonly] { background: #f1f5f9; color: #64748b; }
@@ -484,10 +496,12 @@
                         <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
                         <button onclick="openAddReservoirModal('balancing')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-100 text-violet-800 hover:bg-violet-200 text-xs font-bold"><i class="fa-solid fa-circle-plus mr-1"></i> KOLAM BALANCING</button>
                         <button onclick="openAddReservoirModal('service')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> KOLAM SERVIS</button>
+                        <button id="kolam-delete-selected" onclick="openDeleteSelectedModal('kolam')" disabled class="admin-only hidden px-3 py-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold"><i class="fa-solid fa-trash-can mr-1"></i> PADAM PILIHAN <span data-selected-count="kolam"></span></button>
                         <button onclick="saveSheetEdits('kolam')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN</button>
                     </div>
                 </div>
                 <div id="kolam-sheet-notice" class="hidden rounded-lg border p-3 text-xs"></div>
+                <div id="kolam-sheet-ribbon" class="sheet-ribbon admin-only hidden" data-sheet-ribbon="kolam"></div>
                 <div class="sheet-shell"><table id="kolam-sheet-table" class="sheet-grid"></table></div>
                 <div class="flex items-center justify-between text-xs text-slate-500"><span id="kolam-sheet-count">0 rekod</span><span id="kolam-sheet-save-status">Tiada perubahan</span></div>
             </div>
@@ -507,10 +521,12 @@
                         <button onclick="toggleSheetFilters('masterlist')" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold"><i class="fa-solid fa-filter mr-1"></i> FILTER</button>
                         <button onclick="switchDemandView('dashboard')" class="px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i> DASHBOARD</button>
                         <button onclick="addSheetRow('masterlist')" class="admin-only hidden px-3 py-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> TAMBAH BARIS</button>
+                        <button id="masterlist-delete-selected" onclick="openDeleteSelectedModal('masterlist')" disabled class="admin-only hidden px-3 py-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold"><i class="fa-solid fa-trash-can mr-1"></i> PADAM PILIHAN <span data-selected-count="masterlist"></span></button>
                         <button onclick="saveSheetEdits('masterlist')" class="admin-only hidden px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN</button>
                     </div>
                 </div>
                 <div id="masterlist-sheet-notice" class="hidden rounded-lg border p-3 text-xs"></div>
+                <div id="masterlist-sheet-ribbon" class="sheet-ribbon admin-only hidden" data-sheet-ribbon="masterlist"></div>
                 <div class="sheet-shell"><table id="masterlist-sheet-table" class="sheet-grid"></table></div>
                 <div class="flex items-center justify-between text-xs text-slate-500"><span id="masterlist-sheet-count">0 rekod</span><span id="masterlist-sheet-save-status">Tiada perubahan</span></div>
             </div>
@@ -569,9 +585,23 @@
     <div id="delete-row-modal" data-html2canvas-ignore="true" class="modal hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
             <div class="p-5 border-b flex items-center justify-between bg-rose-50"><div><p class="text-[10px] uppercase tracking-[.16em] font-bold text-rose-600">Pengesahan keselamatan</p><h2 class="text-xl font-black text-slate-900 mt-1">Padam rekod</h2></div><button onclick="closeDeleteRowModal()" class="w-9 h-9 rounded-full bg-white border hover:bg-slate-100 text-slate-500" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></div>
-            <div class="p-5 space-y-4"><p class="text-sm text-slate-700">Taip semula nama <strong id="delete-row-name" class="text-rose-700"></strong> untuk mengesahkan.</p><input id="delete-row-confirmation" class="new-reservoir-input" autocomplete="off" oninput="updateDeleteConfirmationState()"><p id="delete-row-warning" class="text-xs text-rose-600"></p></div>
+            <div class="p-5 space-y-4"><p class="text-sm text-slate-700">Taip <strong id="delete-row-name" class="text-rose-700"></strong> untuk mengesahkan.</p><div id="delete-row-list" class="max-h-28 overflow-y-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-600"></div><input id="delete-row-confirmation" class="new-reservoir-input" autocomplete="off" oninput="updateDeleteConfirmationState()"><p id="delete-row-warning" class="text-xs text-rose-600"></p></div>
             <div class="border-t p-4 flex justify-end gap-2"><button onclick="closeDeleteRowModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">BATAL</button><button id="delete-row-submit" onclick="confirmDeleteSheetRow()" disabled class="px-4 py-2.5 rounded-xl bg-rose-600 disabled:bg-rose-200 hover:bg-rose-500 text-white text-xs font-bold"><i class="fa-solid fa-trash mr-1"></i>PADAM REKOD</button></div>
         </div>
+    </div>
+
+    <div id="sheet-context-menu" data-html2canvas-ignore="true" class="sheet-context-menu hidden" role="menu" aria-label="Menu sel spreadsheet">
+        <button type="button" onclick="sheetClipboardAction('cut')"><i class="fa-solid fa-scissors w-4"></i>Potong</button>
+        <button type="button" onclick="sheetClipboardAction('copy')"><i class="fa-regular fa-copy w-4"></i>Salin</button>
+        <button type="button" onclick="sheetClipboardAction('paste')"><i class="fa-solid fa-paste w-4"></i>Tampal</button>
+        <div class="my-1 border-t"></div>
+        <button type="button" onclick="clearActiveSheetCell()"><i class="fa-solid fa-eraser w-4"></i>Kosongkan kandungan</button>
+        <button type="button" onclick="addSheetRowFromContext()"><i class="fa-solid fa-plus w-4"></i>Tambah baris baharu</button>
+        <button type="button" class="danger" onclick="selectActiveRowForDelete()"><i class="fa-solid fa-trash-can w-4"></i>Padam baris ini</button>
+        <div class="my-1 border-t"></div>
+        <button type="button" onclick="applySheetFormat('bold')"><i class="fa-solid fa-bold w-4"></i>Bold</button>
+        <button type="button" onclick="applySheetFormat('italic')"><i class="fa-solid fa-italic w-4"></i>Italic</button>
+        <button type="button" onclick="applySheetFormat('underline')"><i class="fa-solid fa-underline w-4"></i>Underline</button>
     </div>
 
     <!-- MODAL KEMASKINI FIZIKAL -->
@@ -636,10 +666,14 @@
         let sheetFilterVisible = { kolam: true, masterlist: true };
         let sheetFilters = { kolam: {}, masterlist: {} };
         let sheetEdits = { kolam: {}, masterlist: {} };
+        let sheetFormats = { kolam: {}, masterlist: {} };
+        let sheetFormatEdits = { kolam: {}, masterlist: {} };
+        let sheetSelections = { kolam: new Set(), masterlist: new Set() };
+        let activeSheetCell = null;
         let sheetLoadedRowCounts = { kolam: 0, masterlist: 0 };
         let activeAddReservoirType = 'KOLAM SERVIS';
         let pendingNewReservoirImage = null;
-        let pendingDeleteRow = null;
+        let pendingDeleteRows = [];
         let demandMap = null; let demandMarkerLayer = null; let demandKmlLayer = null; let demandSecondaryKmlLayer = null; let chartDemandTopInst = null; let chartDemandSupplyInst = null;
         let demandLayerCounts = { kolam: 0, secondary: 0 }; let reservoirKmlOverrides = {}; let reservoirKmlOverridesLoaded = false; let sidebarCloseTimer = null;
         const kmlTextCache = new Map();
@@ -693,6 +727,11 @@
             } else {
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
             }
+            initializeSheetRibbons();
+            document.addEventListener('click', event => {
+                if (!event.target.closest('#sheet-context-menu')) closeSheetContextMenu();
+            });
+            document.addEventListener('keydown', handleSheetShortcut);
 
             switchModule('home');
             fetchData(true);
@@ -903,6 +942,34 @@
         const MASTERLIST_FROZEN_HEADERS = new Map([['LRA', 0], ['KOLAM UTAMA', 1], ['SECONDARY SUPPLY', 2], ['KAWASAN', 3]]);
         const MASTERLIST_HIDDEN_COLUMN_INDEXES = new Set([0, 22, 23, 24, 25, 26, 27, 28]);
         const SHEET_ZOOM_LEVELS = [50, 75, 100, 125, 150, 175];
+        const SHEET_FONT_FAMILIES = ['Arial', 'Calibri', 'Verdana', 'Tahoma', 'Times New Roman'];
+
+        function sheetRibbonMarkup(key) {
+            return `<div class="sheet-ribbon-group" aria-label="Clipboard">
+                <button type="button" title="Potong" onclick="sheetClipboardAction('cut')"><i class="fa-solid fa-scissors"></i></button>
+                <button type="button" title="Salin" onclick="sheetClipboardAction('copy')"><i class="fa-regular fa-copy"></i></button>
+                <button type="button" title="Tampal" onclick="sheetClipboardAction('paste')"><i class="fa-solid fa-paste"></i></button>
+            </div><div class="sheet-ribbon-group" aria-label="Font">
+                <select aria-label="Jenis font" onchange="applySheetFormat('fontFamily', this.value)">${SHEET_FONT_FAMILIES.map(font => `<option>${font}</option>`).join('')}</select>
+                <select aria-label="Saiz font" onchange="applySheetFormat('fontSize', this.value)">${[8,9,10,11,12,14,16,18,20,24].map(size => `<option value="${size}" ${size === 11 ? 'selected' : ''}>${size}</option>`).join('')}</select>
+                <button type="button" title="Bold" onclick="applySheetFormat('bold')"><i class="fa-solid fa-bold"></i></button>
+                <button type="button" title="Italic" onclick="applySheetFormat('italic')"><i class="fa-solid fa-italic"></i></button>
+                <button type="button" title="Underline" onclick="applySheetFormat('underline')"><i class="fa-solid fa-underline"></i></button>
+                <label title="Warna teks"><i class="fa-solid fa-font mr-1"></i><input type="color" value="#0f172a" onchange="applySheetFormat('textColor', this.value)"></label>
+                <label title="Warna latar"><i class="fa-solid fa-fill-drip mr-1"></i><input type="color" value="#ffffff" onchange="applySheetFormat('fillColor', this.value)"></label>
+            </div><div class="sheet-ribbon-group" aria-label="Penjajaran">
+                <button type="button" title="Kiri" onclick="applySheetFormat('align', 'LEFT')"><i class="fa-solid fa-align-left"></i></button>
+                <button type="button" title="Tengah" onclick="applySheetFormat('align', 'CENTER')"><i class="fa-solid fa-align-center"></i></button>
+                <button type="button" title="Kanan" onclick="applySheetFormat('align', 'RIGHT')"><i class="fa-solid fa-align-right"></i></button>
+            </div><span class="ml-auto text-[10px] font-semibold text-slate-400" data-ribbon-status="${key}">Pilih atau klik kanan pada sel</span>`;
+        }
+
+        function initializeSheetRibbons() {
+            ['kolam', 'masterlist'].forEach(key => {
+                const ribbon = document.getElementById(`${key}-sheet-ribbon`);
+                if (ribbon && !ribbon.dataset.ready) { ribbon.innerHTML = sheetRibbonMarkup(key); ribbon.dataset.ready = '1'; }
+            });
+        }
 
         function isReservoirDropdownHeader(value) { return KOLAM_DROPDOWN_HEADERS.has(normalizeHeader(value)); }
         function isMasterlistDropdownHeader(value) { return MASTERLIST_DROPDOWN_HEADERS.has(normalizeHeader(value)); }
@@ -1313,6 +1380,39 @@
             document.querySelectorAll('[data-kolam-zoom]').forEach(button => button.classList.toggle('active', Number(button.dataset.kolamZoom) === zoom));
         }
 
+        function sheetCellAddress(rowIndex, columnIndex) { return `${rowIndex}:${columnIndex}`; }
+
+        function sheetFormatStyle(key, rowIndex, columnIndex) {
+            const format = sheetFormats[key]?.[sheetCellAddress(rowIndex, columnIndex)] || {};
+            const safeFont = SHEET_FONT_FAMILIES.includes(format.fontFamily) ? format.fontFamily : '';
+            const fontSizeValue = Number(format.fontSize);
+            const safeSize = format.fontSize !== undefined && Number.isFinite(fontSizeValue) ? Math.min(36, Math.max(8, fontSizeValue)) : 0;
+            const safeColor = /^#[0-9a-f]{6}$/i.test(format.textColor || '') ? format.textColor : '';
+            const safeFill = /^#[0-9a-f]{6}$/i.test(format.fillColor || '') ? format.fillColor : '';
+            const align = ['LEFT', 'CENTER', 'RIGHT'].includes(format.align) ? format.align.toLowerCase() : '';
+            return [safeFont && `font-family:${safeFont}`, safeSize && `font-size:${safeSize}px`, format.bold && 'font-weight:700', format.italic && 'font-style:italic', format.underline && 'text-decoration:underline', safeColor && `color:${safeColor}`, safeFill && `background-color:${safeFill}`, align && `text-align:${align}`].filter(Boolean).join(';');
+        }
+
+        function updateSelectedRowsUi(key) {
+            const count = sheetSelections[key].size;
+            const button = document.getElementById(`${key}-delete-selected`);
+            if (button) button.disabled = !count;
+            document.querySelectorAll(`[data-selected-count="${key}"]`).forEach(node => { node.innerText = count ? `(${count})` : ''; });
+        }
+
+        function toggleSheetRowSelection(key, rowIndex, checked) {
+            if (checked) sheetSelections[key].add(Number(rowIndex)); else sheetSelections[key].delete(Number(rowIndex));
+            renderSheetTable(key); updateSelectedRowsUi(key);
+        }
+
+        function toggleAllVisibleSheetRows(key, checked) {
+            document.querySelectorAll(`#${key}-sheet-table tbody input[data-row-index]`).forEach(input => {
+                const rowIndex = Number(input.dataset.rowIndex);
+                if (checked) sheetSelections[key].add(rowIndex); else sheetSelections[key].delete(rowIndex);
+            });
+            renderSheetTable(key); updateSelectedRowsUi(key);
+        }
+
         function renderSheetTable(key) {
             const state = sheetState(key), table = document.getElementById(state.tableId); if (!table) return;
             const filters = sheetFilters[key];
@@ -1334,8 +1434,10 @@
             }
             const editable = userLevel === 'admin';
             const visibleColumnIndexes = visibleSheetColumnIndexes(key, state);
-            const sequenceHeader = key === 'masterlist' ? '<th class="sheet-sequence">NO.</th>' : '';
-            const sequenceFilter = key === 'masterlist' ? '<th class="sheet-sequence"></th>' : '';
+            const allVisibleSelected = visibleRows.length > 0 && visibleRows.every(item => sheetSelections[key].has(item.rowIndex));
+            const sequenceHeader = '<th class="sheet-sequence">NO.</th>';
+            const selectionHeader = `<th class="sheet-select-column"><input type="checkbox" class="sheet-row-checkbox" aria-label="Pilih semua baris dipaparkan" ${allVisibleSelected ? 'checked' : ''} onchange="toggleAllVisibleSheetRows('${key}', this.checked)"></th>`;
+            const sequenceFilter = '<th class="sheet-sequence"></th><th class="sheet-select-column"></th>';
             const headerHtml = visibleColumnIndexes.map(index => {
                 const header = state.headers[index];
                 const locked = isSheetFormulaLocked(key, header, index);
@@ -1344,32 +1446,130 @@
             const filterHtml = visibleColumnIndexes.map(index => `<th class="${sheetColumnClass(key, state.headers[index], index)}"><input class="sheet-filter-input" value="${escapeHtml(filters[index] || '')}" onchange="updateSheetFilter('${key}', ${index}, this.value)" placeholder="Filter..."></th>`).join('');
             const bodyHtml = visibleRows.length ? visibleRows.map((item, displayIndex) => {
                 const record = key === 'kolam' ? makeReservoirRecord(state.headers, item.row, item.rowIndex) : null;
-                const rowClass = record && isBalancingReservoir(record) ? 'kolam-balancing-row' : '';
-                const sequenceCell = key === 'masterlist' ? `<td class="sheet-sequence" title="Baris ${state.headerRow + 1 + item.rowIndex}">${displayIndex + 1}</td>` : '';
-                const deleteLabel = sheetDeleteIdentity(key, item.row, item.rowIndex);
-                const deleteCell = `<td class="sheet-action-column">${editable ? `<button type="button" onclick="openDeleteRowModal('${key}', ${item.rowIndex})" class="w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-50" title="Padam ${escapeHtml(deleteLabel.name)}" aria-label="Padam ${escapeHtml(deleteLabel.name)}"><i class="fa-solid fa-trash-can"></i></button>` : '<i class="fa-solid fa-lock text-slate-300"></i>'}</td>`;
-                return `<tr class="${rowClass}">${sequenceCell}${visibleColumnIndexes.map(colIndex => {
+                const selected = sheetSelections[key].has(item.rowIndex);
+                const rowClasses = [record && isBalancingReservoir(record) ? 'kolam-balancing-row' : '', selected ? 'sheet-row-selected' : ''].filter(Boolean).join(' ');
+                const sequenceCell = `<td class="sheet-sequence" title="Baris ${state.headerRow + 1 + item.rowIndex}">${displayIndex + 1}</td>`;
+                const selectionCell = `<td class="sheet-select-column"><input type="checkbox" class="sheet-row-checkbox" data-row-index="${item.rowIndex}" aria-label="Pilih baris ${displayIndex + 1}" ${selected ? 'checked' : ''} onchange="toggleSheetRowSelection('${key}', ${item.rowIndex}, this.checked)"></td>`;
+                return `<tr class="${rowClasses}">${sequenceCell}${selectionCell}${visibleColumnIndexes.map(colIndex => {
                 const dirty = Object.prototype.hasOwnProperty.call(sheetEdits[key], `${item.rowIndex}:${colIndex}`);
+                const formatted = Object.prototype.hasOwnProperty.call(sheetFormatEdits[key], sheetCellAddress(item.rowIndex, colIndex));
                 const formulaLocked = isSheetFormulaLocked(key, state.headers[colIndex], colIndex);
                 const relationshipLocked = key === 'kolam' && record && isBalancingReservoir(record) && normalizeHeader(state.headers[colIndex]) === 'KOLAM BALANCING UTAMA';
                 const cellEditable = editable && !formulaLocked && !relationshipLocked;
                 const dropdown = cellEditable && ((key === 'kolam' && isReservoirDropdownHeader(state.headers[colIndex])) || (key === 'masterlist' && isMasterlistDropdownHeader(state.headers[colIndex])));
-                const classes = `${sheetColumnClass(key, state.headers[colIndex], colIndex)} ${dropdown ? 'sheet-dropdown-cell' : ''} ${cellEditable && !dropdown ? 'sheet-editable' : ''} ${formulaLocked ? 'sheet-formula-locked' : ''} ${dirty ? 'sheet-dirty' : ''}`;
+                const active = activeSheetCell?.key === key && activeSheetCell.rowIndex === item.rowIndex && activeSheetCell.columnIndex === colIndex;
+                const classes = `${sheetColumnClass(key, state.headers[colIndex], colIndex)} ${dropdown ? 'sheet-dropdown-cell' : ''} ${cellEditable && !dropdown ? 'sheet-editable' : ''} ${formulaLocked ? 'sheet-formula-locked' : ''} ${dirty || formatted ? 'sheet-dirty' : ''} ${active ? 'sheet-cell-active' : ''}`;
+                const cellEvents = `onclick="activateSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)" oncontextmenu="openSheetContextMenu(event, '${key}', ${item.rowIndex}, ${colIndex}, this)"`;
+                const style = sheetFormatStyle(key, item.rowIndex, colIndex);
                 if (dropdown) {
                     const options = key === 'kolam' ? reservoirDropdownOptionsHtml(state.headers[colIndex], item.row[colIndex] ?? '') : masterlistDropdownOptionsHtml(state.headers[colIndex], item.row[colIndex] ?? '');
-                    return `<td class="${classes}" title="Pilihan diselaraskan daripada Google Sheet"><select class="sheet-cell-select" aria-label="${escapeHtml(state.headers[colIndex])}" onchange="editSheetDropdown('${key}', ${item.rowIndex}, ${colIndex}, this)">${options}</select></td>`;
+                    return `<td class="${classes}" style="${style}" ${cellEvents} title="Pilihan diselaraskan daripada Google Sheet"><select class="sheet-cell-select" style="${style}" aria-label="${escapeHtml(state.headers[colIndex])}" onchange="editSheetDropdown('${key}', ${item.rowIndex}, ${colIndex}, this)">${options}</select></td>`;
                 }
-                return `<td class="${classes}" ${cellEditable ? 'contenteditable="true" spellcheck="false"' : ''} title="${formulaLocked ? 'Formula Google Sheet dikunci' : escapeHtml(item.row[colIndex] ?? '')}" ${cellEditable ? `onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)"` : ''}>${escapeHtml(item.row[colIndex] ?? '')}${formulaLocked ? ' <i class="fa-solid fa-lock text-[9px] text-slate-400 ml-1"></i>' : ''}</td>`;
-                }).join('')}${deleteCell}</tr>`;
-            }).join('') : `<tr><td colspan="${Math.max(1, visibleColumnIndexes.length + (key === 'masterlist' ? 2 : 1))}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
-            table.innerHTML = `<thead><tr>${sequenceHeader}${headerHtml}<th class="sheet-action-column">TINDAKAN</th></tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${sequenceFilter}${filterHtml}<th class="sheet-action-column"></th></tr></thead><tbody>${bodyHtml}</tbody>`;
+                return `<td class="${classes}" style="${style}" ${cellEvents} ${cellEditable ? 'contenteditable="true" spellcheck="false"' : ''} title="${formulaLocked ? 'Formula Google Sheet dikunci' : escapeHtml(item.row[colIndex] ?? '')}" ${cellEditable ? `onblur="editSheetCell('${key}', ${item.rowIndex}, ${colIndex}, this)"` : ''}>${escapeHtml(item.row[colIndex] ?? '')}${formulaLocked ? ' <i class="fa-solid fa-lock text-[9px] text-slate-400 ml-1"></i>' : ''}</td>`;
+                }).join('')}</tr>`;
+            }).join('') : `<tr><td colspan="${Math.max(1, visibleColumnIndexes.length + 2)}" class="p-8 text-center text-slate-400">Tiada rekod sepadan.</td></tr>`;
+            table.innerHTML = `<thead><tr>${sequenceHeader}${selectionHeader}${headerHtml}</tr><tr class="sheet-filter-row ${sheetFilterVisible[key] ? '' : 'hidden'}">${sequenceFilter}${filterHtml}</tr></thead><tbody>${bodyHtml}</tbody>`;
             if (key === 'kolam') setKolamZoom(Number(document.querySelector('[data-kolam-zoom].active')?.dataset.kolamZoom || 100));
             if (key === 'masterlist') setMasterlistZoom(Number(document.querySelector('[data-masterlist-zoom].active')?.dataset.masterlistZoom || 100));
             document.getElementById(`${key}-sheet-count`).innerText = `${visibleRows.length.toLocaleString()} / ${state.rows.length.toLocaleString()} rekod`;
+            updateSelectedRowsUi(key);
         }
 
         function updateSheetFilter(key, columnIndex, value) { sheetFilters[key][columnIndex] = value; renderSheetTable(key); }
         function toggleSheetFilters(key) { sheetFilterVisible[key] = !sheetFilterVisible[key]; renderSheetTable(key); }
+
+        function activateSheetCell(key, rowIndex, columnIndex, cell) {
+            activeSheetCell = { key, rowIndex: Number(rowIndex), columnIndex: Number(columnIndex) };
+            document.querySelectorAll('.sheet-cell-active').forEach(node => node.classList.remove('sheet-cell-active'));
+            if (cell) cell.classList.add('sheet-cell-active');
+            const status = document.querySelector(`[data-ribbon-status="${key}"]`);
+            if (status) status.innerText = `${sheetState(key).headers[columnIndex] || `Kolum ${columnIndex + 1}`} · Baris ${sheetState(key).headerRow + 1 + Number(rowIndex)}`;
+        }
+
+        function openSheetContextMenu(event, key, rowIndex, columnIndex, cell) {
+            if (userLevel !== 'admin') return;
+            event.preventDefault(); activateSheetCell(key, rowIndex, columnIndex, cell);
+            const menu = document.getElementById('sheet-context-menu');
+            menu.classList.remove('hidden');
+            const width = 230, height = 390;
+            menu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8))}px`;
+            menu.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8))}px`;
+        }
+
+        function closeSheetContextMenu() { document.getElementById('sheet-context-menu')?.classList.add('hidden'); }
+
+        function activeSheetCellState(requireEditable = false) {
+            if (!activeSheetCell) { showToast('Pilih satu sel dahulu.', true); return null; }
+            const { key, rowIndex, columnIndex } = activeSheetCell, state = sheetState(key);
+            if (!state.rows[rowIndex]) return null;
+            const record = key === 'kolam' ? makeReservoirRecord(state.headers, state.rows[rowIndex], rowIndex) : null;
+            const relationshipLocked = key === 'kolam' && record && isBalancingReservoir(record) && normalizeHeader(state.headers[columnIndex]) === 'KOLAM BALANCING UTAMA';
+            if (requireEditable && (userLevel !== 'admin' || isSheetFormulaLocked(key, state.headers[columnIndex], columnIndex) || relationshipLocked)) { showToast('Sel ini dikunci untuk melindungi formula atau hubungan kolam.', true); return null; }
+            return { key, rowIndex, columnIndex, state, value: String(state.rows[rowIndex][columnIndex] ?? '') };
+        }
+
+        async function sheetClipboardAction(action) {
+            closeSheetContextMenu();
+            const active = activeSheetCellState(action !== 'copy'); if (!active) return;
+            try {
+                if (action === 'copy' || action === 'cut') {
+                    await navigator.clipboard.writeText(active.value);
+                    if (action === 'cut') {
+                        updateSheetCellValue(active.key, active.rowIndex, active.columnIndex, '', null);
+                        if (active.key === 'kolam') synchronizeReservoirRelationship(active.rowIndex, normalizeHeader(active.state.headers[active.columnIndex])); else renderSheetTable(active.key);
+                    }
+                    showToast(action === 'copy' ? 'Kandungan sel disalin.' : 'Kandungan sel dipotong.');
+                    return;
+                }
+                const value = await navigator.clipboard.readText();
+                updateSheetCellValue(active.key, active.rowIndex, active.columnIndex, value, null);
+                if (active.key === 'kolam') synchronizeReservoirRelationship(active.rowIndex, normalizeHeader(active.state.headers[active.columnIndex])); else renderSheetTable(active.key);
+                showToast('Kandungan ditampal ke sel.');
+            } catch (_) { showToast('Pelayar tidak membenarkan akses clipboard. Gunakan Ctrl+C / Ctrl+V.', true); }
+        }
+
+        function clearActiveSheetCell() {
+            closeSheetContextMenu();
+            const active = activeSheetCellState(true); if (!active) return;
+            updateSheetCellValue(active.key, active.rowIndex, active.columnIndex, '', null);
+            if (active.key === 'kolam') synchronizeReservoirRelationship(active.rowIndex, normalizeHeader(active.state.headers[active.columnIndex])); else renderSheetTable(active.key);
+        }
+
+        function applySheetFormat(property, value = null) {
+            closeSheetContextMenu();
+            const active = activeSheetCellState(false); if (!active || userLevel !== 'admin') return;
+            const address = sheetCellAddress(active.rowIndex, active.columnIndex);
+            const current = { ...(sheetFormats[active.key][address] || {}) };
+            if (['bold', 'italic', 'underline'].includes(property)) current[property] = !current[property];
+            else current[property] = value;
+            sheetFormats[active.key][address] = current;
+            sheetFormatEdits[active.key][address] = current;
+            persistLocalSheetDraft(active.key); renderSheetTable(active.key); updateSheetSaveStatus(active.key);
+        }
+
+        function addSheetRowFromContext() {
+            closeSheetContextMenu();
+            const key = activeSheetCell?.key || activeDemandView;
+            if (key === 'kolam') openAddReservoirModal('service'); else if (key === 'masterlist') addSheetRow('masterlist');
+        }
+
+        function selectActiveRowForDelete() {
+            closeSheetContextMenu();
+            const active = activeSheetCellState(false); if (!active) return;
+            if (!sheetSelections[active.key].has(active.rowIndex)) {
+                sheetSelections[active.key].clear(); sheetSelections[active.key].add(active.rowIndex); renderSheetTable(active.key);
+            }
+            openDeleteSelectedModal(active.key);
+        }
+
+        function handleSheetShortcut(event) {
+            if (!activeSheetCell || !['kolam', 'masterlist'].includes(activeDemandView) || userLevel !== 'admin') return;
+            if ((event.ctrlKey || event.metaKey) && ['b', 'i', 'u'].includes(event.key.toLowerCase())) {
+                event.preventDefault(); applySheetFormat({ b: 'bold', i: 'italic', u: 'underline' }[event.key.toLowerCase()]);
+            } else if (event.key === 'Delete' && !event.target.closest('input, select')) {
+                event.preventDefault(); clearActiveSheetCell();
+            }
+        }
 
         function editSheetCell(key, rowIndex, columnIndex, cell) {
             if (userLevel !== 'admin') return;
@@ -1581,60 +1781,88 @@
         }
 
         function openDeleteRowModal(key, rowIndex) {
+            sheetSelections[key].clear(); sheetSelections[key].add(Number(rowIndex)); renderSheetTable(key); openDeleteSelectedModal(key);
+        }
+
+        function openDeleteSelectedModal(key) {
             if (userLevel !== 'admin') return;
-            if (Object.keys(sheetEdits[key]).length) { showToast('Simpan perubahan semasa dahulu sebelum memadam rekod.', true); return; }
-            const state = sheetState(key), row = state.rows[rowIndex]; if (!row) return;
+            const selectedIndexes = [...sheetSelections[key]].filter(index => sheetState(key).rows[index]).sort((a, b) => a - b);
+            if (!selectedIndexes.length) { showToast('Tick sekurang-kurangnya satu baris.', true); return; }
+            if (Object.keys(sheetEdits[key]).length || Object.keys(sheetFormatEdits[key]).length) { showToast('Simpan perubahan semasa dahulu sebelum memadam rekod.', true); return; }
+            const state = sheetState(key), selectedSet = new Set(selectedIndexes);
             if (key === 'kolam') {
-                const record = makeReservoirRecord(state.headers, row, rowIndex);
-                if (isBalancingReservoir(record)) {
+                for (const rowIndex of selectedIndexes) {
+                    const record = makeReservoirRecord(state.headers, state.rows[rowIndex], rowIndex);
+                    if (!isBalancingReservoir(record)) continue;
                     const children = reservoirRows.filter(child => canonicalStatusValue(child.balancingParentCode) === canonicalStatusValue(record.reservoirCode));
-                    if (children.length) { showToast(`Tidak boleh padam ${record.name}. Pindahkan atau padam ${children.length} kolam servis anak dahulu.`, true); return; }
+                    const unselectedChildren = children.filter(child => !selectedSet.has(child._id));
+                    if (unselectedChildren.length) { showToast(`Tidak boleh padam ${record.name}. Tick juga ${unselectedChildren.length} kolam servis anak atau pindahkan anak dahulu.`, true); return; }
                 }
             }
-            const identity = sheetDeleteIdentity(key, row, rowIndex);
-            pendingDeleteRow = { key, rowIndex, name: identity.name, confirmColumn: identity.column, sheetRow: state.headerRow + 1 + rowIndex };
-            document.getElementById('delete-row-name').innerText = identity.name;
+            pendingDeleteRows = selectedIndexes.map(rowIndex => {
+                const identity = sheetDeleteIdentity(key, state.rows[rowIndex], rowIndex);
+                return { key, rowIndex, name: identity.name, confirmColumn: identity.column, sheetRow: state.headerRow + 1 + rowIndex };
+            });
+            const phrase = pendingDeleteRows.length === 1 ? pendingDeleteRows[0].name : `PADAM ${pendingDeleteRows.length} REKOD`;
+            document.getElementById('delete-row-name').innerText = phrase;
+            document.getElementById('delete-row-list').innerHTML = pendingDeleteRows.map(target => `<div>• ${escapeHtml(target.name)}</div>`).join('');
             document.getElementById('delete-row-confirmation').value = '';
-            document.getElementById('delete-row-warning').innerText = key === 'kolam' ? 'Tindakan ini turut membuang hubungan, lokasi dan data teknikal kolam.' : 'Tindakan ini membuang satu baris MASTERLIST.';
+            document.getElementById('delete-row-warning').innerText = key === 'kolam' ? 'Rekod hubungan, lokasi dan data teknikal kolam yang dipilih akan dibuang.' : `${pendingDeleteRows.length} baris MASTERLIST yang dipilih akan dibuang.`;
             updateDeleteConfirmationState(); document.getElementById('delete-row-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden';
             setTimeout(() => document.getElementById('delete-row-confirmation').focus(), 50);
         }
 
         function updateDeleteConfirmationState() {
             const input = String(document.getElementById('delete-row-confirmation')?.value || '').trim();
-            document.getElementById('delete-row-submit').disabled = !pendingDeleteRow || canonicalReservoirName(input) !== canonicalReservoirName(pendingDeleteRow.name);
+            const phrase = pendingDeleteRows.length === 1 ? pendingDeleteRows[0].name : `PADAM ${pendingDeleteRows.length} REKOD`;
+            document.getElementById('delete-row-submit').disabled = !pendingDeleteRows.length || canonicalReservoirName(input) !== canonicalReservoirName(phrase);
         }
 
-        function closeDeleteRowModal() { document.getElementById('delete-row-modal').classList.add('hidden'); document.body.style.overflow = ''; pendingDeleteRow = null; }
+        function closeDeleteRowModal() { document.getElementById('delete-row-modal').classList.add('hidden'); document.body.style.overflow = ''; pendingDeleteRows = []; }
+
+        function reindexSheetFormatsAfterDelete(key, deletedIndexes) {
+            const removed = [...deletedIndexes].sort((a, b) => a - b), deleted = new Set(removed);
+            const reindex = source => Object.fromEntries(Object.entries(source).flatMap(([address, format]) => {
+                const [rowIndex, columnIndex] = address.split(':').map(Number);
+                if (deleted.has(rowIndex)) return [];
+                const shift = removed.filter(index => index < rowIndex).length;
+                return [[sheetCellAddress(rowIndex - shift, columnIndex), format]];
+            }));
+            sheetFormats[key] = reindex(sheetFormats[key]); sheetFormatEdits[key] = reindex(sheetFormatEdits[key]);
+        }
 
         async function confirmDeleteSheetRow() {
-            if (!pendingDeleteRow || document.getElementById('delete-row-submit').disabled) return;
-            const target = { ...pendingDeleteRow }, state = sheetState(target.key), button = document.getElementById('delete-row-submit');
+            if (!pendingDeleteRows.length || document.getElementById('delete-row-submit').disabled) return;
+            const targets = pendingDeleteRows.map(target => ({ ...target })), key = targets[0].key, state = sheetState(key), button = document.getElementById('delete-row-submit');
             button.disabled = true; button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>MEMADAM...';
             try {
-                if (!IS_LOCAL_PREVIEW && target.rowIndex < sheetLoadedRowCounts[target.key]) {
-                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'deleteSheetRow', sheetName: state.sheetName, row: target.sheetRow, confirmColumn: target.confirmColumn, confirmName: target.name }) });
+                const hostedTargets = targets.filter(target => target.rowIndex < sheetLoadedRowCounts[key]);
+                if (!IS_LOCAL_PREVIEW && hostedTargets.length) {
+                    const rows = hostedTargets.map(target => ({ row: target.sheetRow, confirmColumn: target.confirmColumn, confirmName: target.name }));
+                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'deleteSheetRows', sheetName: state.sheetName, rows }) });
                     const result = await response.json(); if (!response.ok || !result.success) throw new Error(result.error || 'Rekod gagal dipadam.');
                 }
-                state.rows.splice(target.rowIndex, 1);
-                if (target.rowIndex < sheetLoadedRowCounts[target.key]) sheetLoadedRowCounts[target.key] -= 1;
-                if (target.key === 'kolam') reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(record => String(record.name || '').trim());
-                persistLocalSheetDraft(target.key); renderSheetTable(target.key); updateSheetSaveStatus(target.key, IS_LOCAL_PREVIEW ? 'Rekod dipadam dalam prototaip lokal' : 'Rekod dipadam dari Google Sheet');
-                closeDeleteRowModal(); if (target.key === 'kolam') { populateDemandFilters(); applyDemandFilters(); }
-                showToast(`${target.name} telah dipadam${IS_LOCAL_PREVIEW ? ' daripada prototaip lokal' : ' daripada Google Sheet'}.`);
+                reindexSheetFormatsAfterDelete(key, targets.map(target => target.rowIndex));
+                targets.sort((a, b) => b.rowIndex - a.rowIndex).forEach(target => state.rows.splice(target.rowIndex, 1));
+                sheetLoadedRowCounts[key] = Math.max(0, sheetLoadedRowCounts[key] - targets.filter(target => target.rowIndex < sheetLoadedRowCounts[key]).length);
+                sheetSelections[key].clear(); activeSheetCell = null;
+                if (key === 'kolam') reservoirRows = reservoirRawRows.map((row, index) => makeReservoirRecord(reservoirHeaders, row, index)).filter(record => String(record.name || '').trim());
+                persistLocalSheetDraft(key); renderSheetTable(key); updateSheetSaveStatus(key, IS_LOCAL_PREVIEW ? 'Rekod dipadam dalam prototaip lokal' : 'Rekod dipadam dari Google Sheet');
+                closeDeleteRowModal(); if (key === 'kolam') { populateDemandFilters(); applyDemandFilters(); }
+                showToast(`${targets.length} rekod telah dipadam${IS_LOCAL_PREVIEW ? ' daripada prototaip lokal' : ' daripada Google Sheet'}.`);
             } catch (error) { showToast(error.message || 'Rekod gagal dipadam.', true); }
             finally { button.disabled = false; button.innerHTML = '<i class="fa-solid fa-trash mr-1"></i>PADAM REKOD'; }
         }
 
         function updateSheetSaveStatus(key, text) {
-            const count = Object.keys(sheetEdits[key]).length;
+            const count = Object.keys(sheetEdits[key]).length + Object.keys(sheetFormatEdits[key]).length;
             document.getElementById(`${key}-sheet-save-status`).innerText = text || (count ? `${count} perubahan belum disimpan` : 'Tiada perubahan');
         }
 
         function persistLocalSheetDraft(key) {
             if (!IS_LOCAL_PREVIEW) return;
             const state = sheetState(key);
-            localStorage.setItem(`pd-water-prototype-v3-${key}`, JSON.stringify({ headers: state.headers, rows: state.rows, timestamp: Date.now() }));
+            localStorage.setItem(`pd-water-prototype-v3-${key}`, JSON.stringify({ headers: state.headers, rows: state.rows, formats: sheetFormats[key], timestamp: Date.now() }));
         }
 
         function restoreLocalSheetDraft(key) {
@@ -1646,6 +1874,7 @@
                 if (snapshotTime && snapshotTime > Number(draft.timestamp || 0)) {
                     localStorage.removeItem(`pd-water-prototype-v3-${key}`); return;
                 }
+                sheetFormats[key] = draft.formats && typeof draft.formats === 'object' ? draft.formats : {};
                 if (key === 'kolam') {
                     const migratedDraft = ensureReservoirRelationshipColumns(draft.headers, draft.rows);
                     reservoirHeaders = migratedDraft.headers;
@@ -1700,18 +1929,20 @@
                 if (validationError) { showToast(validationError, true); return; }
             }
             const entries = Object.entries(sheetEdits[key]);
-            if (!entries.length) { showToast('Tiada perubahan untuk disimpan.'); return; }
+            const formatEntries = Object.entries(sheetFormatEdits[key]);
+            if (!entries.length && !formatEntries.length) { showToast('Tiada perubahan untuk disimpan.'); return; }
             const state = sheetState(key);
             if (IS_LOCAL_PREVIEW) {
-                persistLocalSheetDraft(key); sheetEdits[key] = {}; renderSheetTable(key); updateSheetSaveStatus(key, 'Disimpan dalam prototaip lokal'); showToast('Perubahan disimpan secara lokal.'); return;
+                persistLocalSheetDraft(key); sheetEdits[key] = {}; sheetFormatEdits[key] = {}; renderSheetTable(key); updateSheetSaveStatus(key, 'Disimpan dalam prototaip lokal'); showToast('Nilai dan format disimpan secara lokal.'); return;
             }
             const updates = entries.map(([address, value]) => { const [rowIndex, columnIndex] = address.split(':').map(Number); return { row: state.headerRow + 1 + rowIndex, column: columnIndex + 1, value }; });
+            const formats = formatEntries.map(([address, format]) => { const [rowIndex, columnIndex] = address.split(':').map(Number); return { row: state.headerRow + 1 + rowIndex, column: columnIndex + 1, ...format }; });
             updateSheetSaveStatus(key, 'Menyimpan ke Google Sheet...');
             try {
-                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'updateSheetCells', sheetName: state.sheetName, updates }) });
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('pd_water_auth_token') || ''}` }, body: JSON.stringify({ action: 'updateSheetCells', sheetName: state.sheetName, updates, formats }) });
                 const result = await response.json();
                 if (!response.ok || !result.success) throw new Error(result.error || 'Gagal menyimpan.');
-                sheetEdits[key] = {}; renderSheetTable(key); updateSheetSaveStatus(key, 'Semua perubahan telah disimpan'); showToast('Google Sheet berjaya dikemas kini.');
+                sheetEdits[key] = {}; sheetFormatEdits[key] = {}; renderSheetTable(key); updateSheetSaveStatus(key, 'Semua perubahan telah disimpan'); showToast('Nilai dan format Google Sheet berjaya dikemas kini.');
             } catch (error) { updateSheetSaveStatus(key, 'Gagal menyimpan'); showToast(error.message || 'Gagal menyimpan.', true); }
         }
 
@@ -1740,6 +1971,8 @@
             localStorage.removeItem('pd-water-prototype-v3-kolam');
             localStorage.removeItem('pd-water-prototype-v3-masterlist');
             sheetEdits.kolam = {}; sheetEdits.masterlist = {};
+            sheetFormatEdits.kolam = {}; sheetFormatEdits.masterlist = {};
+            sheetFormats.kolam = {}; sheetFormats.masterlist = {};
             return window.PROTOTYPE_SHEET_DATA;
         }
 
@@ -1770,6 +2003,8 @@
                             localStorage.removeItem('pd-water-prototype-v3-kolam');
                             localStorage.removeItem('pd-water-prototype-v3-masterlist');
                             sheetEdits.kolam = {}; sheetEdits.masterlist = {};
+                            sheetFormatEdits.kolam = {}; sheetFormatEdits.masterlist = {};
+                            sheetFormats.kolam = {}; sheetFormats.masterlist = {};
                         }
                         ingestReservoirPayload(snapshot.rows, snapshot.headers);
                         const masterlist = window.PROTOTYPE_SHEET_DATA?.masterlist;

@@ -14,7 +14,8 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 - Status seperti `ACTIVE` dan `Active` digabungkan sebagai satu pilihan `Active`
 - Medan formula `DEMAND PER DAY (M3)` dikunci daripada suntingan, dan data suction tank menggunakan header `CAPACITY ST (ML)`
 - Pentadbir menambah Kolam Balancing atau Kolam Servis melalui popup berpandu. Kod `BR-xxx` / `SR-xxx` dijana automatik, dan Kolam Servis dipautkan kepada Kolam Balancing utama serta kod outlet.
-- Setiap jadual mempunyai zoom 50% hingga 175%, nombor turutan MASTERLIST dan tindakan padam yang memerlukan nama rekod ditaip semula.
+- Setiap jadual mempunyai zoom 50% hingga 175%, nombor turutan, checkbox pilihan baris dan satu butang `PADAM PILIHAN` di bahagian atas. Pemadaman masih memerlukan nama rekod atau frasa pengesahan ditaip semula.
+- `KOLAM DETAILS` dan `MASTERLIST` mempunyai ribbon gaya spreadsheet untuk potong/salin/tampal, font, saiz, bold, italic, underline, warna dan penjajaran. Klik kanan pada sel membuka menu konteks bagi tindakan sel/baris yang lazim.
 - Kolum formula MASTERLIST L, M dan N dikunci daripada suntingan web.
 
 ## Uji di VS Code
@@ -74,13 +75,14 @@ Paparan spreadsheet turut menggunakan:
 {"action":"getSheetTable","sheetName":"MASTERLIST","forceRefresh":false}
 ```
 
-Suntingan admin dihantar secara batch melalui action `updateSheetCells`. Action
+Suntingan nilai dan format admin dihantar secara batch melalui action `updateSheetCells`. Action
 ini mesti diletakkan di belakang semakan token admin Worker sedia ada. Akaun
 servis Google juga perlu mempunyai akses Editor kepada fail Sheet.
 
 Penambahan baris baharu menyalin format, dropdown, dan formula daripada baris
-rujukan Google Sheet sebelum nilai dimasukkan. Action `deleteSheetRow` menyemak
-semula nama pada Google Sheet sebelum membuang baris. Kedua-dua action mesti
+rujukan Google Sheet sebelum nilai dimasukkan. Action `deleteSheetRows` menyemak
+semula setiap nama pada Google Sheet sebelum membuang baris terpilih dari bawah
+ke atas; `deleteSheetRow` kekal sebagai laluan keserasian satu baris. Kedua-dua action mesti
 diletakkan di belakang semakan token admin.
 
 Gambar dalam popup tambah kolam menggunakan action `uploadReservoirImage`.

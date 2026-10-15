@@ -9,7 +9,7 @@ for (const required of ['demand-layer-kolam', 'demand-layer-secondary', 'saveRes
 }
 const workerSource = await readFile('cloudflare-worker-kolam-snippet.js', 'utf8');
 new Function(workerSource);
-for (const required of ['saveReservoirKml', 'getReservoirKmlOverrides', 'updateSheetCells', 'deleteSheetRow', 'uploadReservoirImage', 'prepareNewSheetRows']) {
+for (const required of ['saveReservoirKml', 'getReservoirKmlOverrides', 'updateSheetCells', 'deleteSheetRow', 'deleteSheetRows', 'uploadReservoirImage', 'prepareNewSheetRows', 'applySheetFormats']) {
   if (!workerSource.includes(required)) throw new Error(`Missing Worker persistence function: ${required}`);
 }
 const manifestSource = await readFile('assets/kml-kolam-manifest.js', 'utf8');
@@ -84,6 +84,11 @@ if (!html.includes('#kolam-sheet-table { zoom: var(--kolam-zoom, 1); }')) throw 
 if (!html.includes('function setKolamZoom(percent)')) throw new Error('Expected KOLAM DETAILS zoom handler');
 if (!html.includes("openAddReservoirModal('balancing')") || !html.includes("openAddReservoirModal('service')")) throw new Error('Expected popup add buttons for balancing and service reservoirs');
 if (!html.includes('function confirmDeleteSheetRow()') || !html.includes('delete-row-confirmation')) throw new Error('Expected typed row-delete confirmation');
+if (!html.includes("openDeleteSelectedModal('kolam')") || !html.includes("openDeleteSelectedModal('masterlist')")) throw new Error('Expected toolbar delete buttons for selected rows');
+if (!html.includes('class="sheet-select-column"') || !html.includes('toggleAllVisibleSheetRows')) throw new Error('Expected row selection checkboxes beside sequence numbers');
+if (!html.includes('function openSheetContextMenu(') || !html.includes('function sheetClipboardAction(')) throw new Error('Expected spreadsheet right-click menu');
+if (!html.includes('function applySheetFormat(') || !html.includes('sheetRibbonMarkup')) throw new Error('Expected spreadsheet formatting ribbon');
+if (html.includes('sheet-action-column')) throw new Error('Per-row delete action column should be removed');
 if (!html.includes("[11, 12, 13].includes(Number(columnIndex))")) throw new Error('Expected MASTERLIST formula columns L to N to be locked');
 if (!html.includes('class="sheet-sequence">NO.</th>')) throw new Error('Expected MASTERLIST sequence column');
 if (!html.includes("const KOLAM_TYPE_BALANCING = 'KOLAM BALANCING'")) throw new Error('Expected explicit reservoir type support');

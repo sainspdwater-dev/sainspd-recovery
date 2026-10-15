@@ -12,6 +12,9 @@
  *      case 'deleteSheetRow':
  *        // IMPORTANT: run the existing admin-token check before this line.
  *        return jsonResponse(await deleteSheetRow(body, env));
+ *      case 'deleteSheetRows':
+ *        // IMPORTANT: run the existing admin-token check before this line.
+ *        return jsonResponse(await deleteSheetRows(body, env));
  *      case 'uploadReservoirImage':
  *        // IMPORTANT: run the existing admin-token check before this line.
  *        return jsonResponse(await uploadReservoirImage(body, env));
@@ -92,7 +95,8 @@ async function updateSheetCells(body, env) {
   const sheetName = String(body?.sheetName || '').trim().toUpperCase();
   if (!EDITABLE_SHEETS[sheetName]) throw new Error('Sheet tidak dibenarkan.');
   const updates = Array.isArray(body?.updates) ? body.updates : [];
-  if (!updates.length || updates.length > 500) throw new Error('Senarai perubahan tidak sah.');
+  const formats = Array.isArray(body?.formats) ? body.formats : [];
+  if ((!updates.length && !formats.length) || updates.length + formats.length > 500) throw new Error('Senarai perubahan tidak sah.');
   const data = updates.map(update => {
     const row = Number(update.row), column = Number(update.column);
     const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 22;
@@ -101,16 +105,51 @@ async function updateSheetCells(body, env) {
     return { range: `'${sheetName}'!${columnToLetter(column)}${row}`, values: [[update.value ?? '']] };
   });
   const accessToken = await getGoogleAccessToken(env);
-  await prepareNewSheetRows(sheetName, updates, accessToken, env);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values:batchUpdate`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data })
-  });
-  if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
+  if (updates.length) await prepareNewSheetRows(sheetName, updates, accessToken, env);
+  if (data.length) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values:batchUpdate`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data })
+    });
+    if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
+  }
+  if (formats.length) await applySheetFormats(sheetName, formats, accessToken, env);
   await clearSheetCaches(sheetName, env);
-  return { success: true, updatedCells: data.length };
+  return { success: true, updatedCells: data.length, formattedCells: formats.length };
+}
+
+async function applySheetFormats(sheetName, formats, accessToken, env) {
+  const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 22;
+  const metaResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}?fields=sheets.properties`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!metaResponse.ok) throw new Error(`Google Sheets API ${metaResponse.status}: ${await metaResponse.text()}`);
+  const sheet = (await metaResponse.json()).sheets?.find(item => String(item.properties?.title || '').toUpperCase() === sheetName);
+  if (!sheet) throw new Error('Metadata sheet tidak ditemui.');
+  const requests = formats.map(format => {
+    const row = Number(format.row), column = Number(format.column);
+    if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || column > maxColumn) throw new Error('Alamat format sel tidak sah.');
+    const userEnteredFormat = {}, fields = [];
+    const textFormat = {};
+    if (typeof format.bold === 'boolean') { textFormat.bold = format.bold; fields.push('textFormat.bold'); }
+    if (typeof format.italic === 'boolean') { textFormat.italic = format.italic; fields.push('textFormat.italic'); }
+    if (typeof format.underline === 'boolean') { textFormat.underline = format.underline; fields.push('textFormat.underline'); }
+    if (typeof format.fontFamily === 'string' && /^[A-Za-z ]{1,40}$/.test(format.fontFamily)) { textFormat.fontFamily = format.fontFamily; fields.push('textFormat.fontFamily'); }
+    if (Number(format.fontSize) >= 8 && Number(format.fontSize) <= 36) { textFormat.fontSize = Number(format.fontSize); fields.push('textFormat.fontSize'); }
+    const textColor = hexToGoogleRgb(format.textColor); if (textColor) { textFormat.foregroundColorStyle = { rgbColor: textColor }; fields.push('textFormat.foregroundColorStyle'); }
+    if (Object.keys(textFormat).length) userEnteredFormat.textFormat = textFormat;
+    const fillColor = hexToGoogleRgb(format.fillColor); if (fillColor) { userEnteredFormat.backgroundColorStyle = { rgbColor: fillColor }; fields.push('backgroundColorStyle'); }
+    const align = String(format.align || '').toUpperCase(); if (['LEFT', 'CENTER', 'RIGHT'].includes(align)) { userEnteredFormat.horizontalAlignment = align; fields.push('horizontalAlignment'); }
+    if (!fields.length) throw new Error('Format sel kosong atau tidak sah.');
+    return { repeatCell: { range: { sheetId: sheet.properties.sheetId, startRowIndex: row - 1, endRowIndex: row, startColumnIndex: column - 1, endColumnIndex: column }, cell: { userEnteredFormat }, fields: `userEnteredFormat(${fields.join(',')})` } };
+  });
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}:batchUpdate`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ requests }) });
+  if (!response.ok) throw new Error(`Google Sheets format API ${response.status}: ${await response.text()}`);
+}
+
+function hexToGoogleRgb(value) {
+  const match = String(value || '').match(/^#([0-9a-f]{6})$/i); if (!match) return null;
+  return { red: parseInt(match[1].slice(0, 2), 16) / 255, green: parseInt(match[1].slice(2, 4), 16) / 255, blue: parseInt(match[1].slice(4, 6), 16) / 255 };
 }
 
 async function prepareNewSheetRows(sheetName, updates, accessToken, env) {
@@ -149,26 +188,33 @@ async function prepareNewSheetRows(sheetName, updates, accessToken, env) {
 }
 
 async function deleteSheetRow(body, env) {
+  return deleteSheetRows({ ...body, rows: [{ row: body?.row, confirmColumn: body?.confirmColumn, confirmName: body?.confirmName }] }, env);
+}
+
+async function deleteSheetRows(body, env) {
   const sheetName = String(body?.sheetName || '').trim().toUpperCase();
   const config = EDITABLE_SHEETS[sheetName];
   if (!config) throw new Error('Sheet tidak dibenarkan.');
-  const row = Number(body?.row), confirmColumn = Number(body?.confirmColumn), confirmName = String(body?.confirmName || '').trim();
   const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 22;
-  if (!Number.isInteger(row) || row <= config.headerRow || !Number.isInteger(confirmColumn) || confirmColumn < 1 || confirmColumn > maxColumn || !confirmName) throw new Error('Pengesahan baris tidak sah.');
+  const rows = Array.isArray(body?.rows) ? body.rows.map(item => ({ row: Number(item?.row), confirmColumn: Number(item?.confirmColumn), confirmName: String(item?.confirmName || '').trim() })) : [];
+  if (!rows.length || rows.length > 100 || new Set(rows.map(item => item.row)).size !== rows.length || rows.some(item => !Number.isInteger(item.row) || item.row <= config.headerRow || !Number.isInteger(item.confirmColumn) || item.confirmColumn < 1 || item.confirmColumn > maxColumn || !item.confirmName)) throw new Error('Pengesahan baris tidak sah.');
   const accessToken = await getGoogleAccessToken(env);
-  const confirmRange = encodeURIComponent(`'${sheetName}'!${columnToLetter(confirmColumn)}${row}`);
-  const verifyResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values/${confirmRange}?valueRenderOption=FORMATTED_VALUE`, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!verifyResponse.ok) throw new Error(`Google Sheets API ${verifyResponse.status}: ${await verifyResponse.text()}`);
-  const actual = String((await verifyResponse.json()).values?.[0]?.[0] || '').replace(/\s+/g, ' ').trim().toUpperCase();
-  if (actual !== confirmName.replace(/\s+/g, ' ').trim().toUpperCase()) throw new Error('Nama pengesahan tidak sepadan dengan rekod Google Sheet. Muat semula data dan cuba lagi.');
+  await Promise.all(rows.map(async item => {
+    const confirmRange = encodeURIComponent(`'${sheetName}'!${columnToLetter(item.confirmColumn)}${item.row}`);
+    const verifyResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}/values/${confirmRange}?valueRenderOption=FORMATTED_VALUE`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!verifyResponse.ok) throw new Error(`Google Sheets API ${verifyResponse.status}: ${await verifyResponse.text()}`);
+    const actual = String((await verifyResponse.json()).values?.[0]?.[0] || '').replace(/\s+/g, ' ').trim().toUpperCase();
+    if (actual !== item.confirmName.replace(/\s+/g, ' ').trim().toUpperCase()) throw new Error(`Nama pengesahan ${item.confirmName} tidak sepadan dengan rekod Google Sheet. Muat semula data dan cuba lagi.`);
+  }));
   const metaResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}?fields=sheets.properties`, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!metaResponse.ok) throw new Error(`Google Sheets API ${metaResponse.status}: ${await metaResponse.text()}`);
   const sheet = (await metaResponse.json()).sheets?.find(item => String(item.properties?.title || '').toUpperCase() === sheetName);
   if (!sheet) throw new Error('Metadata sheet tidak ditemui.');
-  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}:batchUpdate`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ requests: [{ deleteDimension: { range: { sheetId: sheet.properties.sheetId, dimension: 'ROWS', startIndex: row - 1, endIndex: row } } }] }) });
+  const requests = rows.sort((a, b) => b.row - a.row).map(item => ({ deleteDimension: { range: { sheetId: sheet.properties.sheetId, dimension: 'ROWS', startIndex: item.row - 1, endIndex: item.row } } }));
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(env.SHEET_ID)}:batchUpdate`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ requests }) });
   if (!response.ok) throw new Error(`Google Sheets API ${response.status}: ${await response.text()}`);
   await clearSheetCaches(sheetName, env);
-  return { success: true, deletedRow: row };
+  return { success: true, deletedRows: rows.map(item => item.row) };
 }
 
 async function uploadReservoirImage(body, env) {
