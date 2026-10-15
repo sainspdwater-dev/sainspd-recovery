@@ -34,7 +34,12 @@
         .reservoir-popup .leaflet-popup-content { margin: 14px; min-width: 260px; }
         .detail-grid dt { color: #64748b; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
         .detail-grid dd { color: #0f172a; font-size: .82rem; font-weight: 600; margin-top: .2rem; overflow-wrap: anywhere; }
-        .sheet-shell { max-height: 68vh; overflow: auto; border: 1px solid #cbd5e1; border-radius: .75rem; background: white; }
+        .sheet-shell { max-height: 68vh; overflow-x: auto; overflow-y: scroll; scrollbar-gutter: stable; scrollbar-width: auto; scrollbar-color: #64748b #e2e8f0; overscroll-behavior: contain; border: 1px solid #cbd5e1; border-radius: .75rem; background: white; }
+        .sheet-shell::-webkit-scrollbar { width: 14px; height: 14px; }
+        .sheet-shell::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 999px; }
+        .sheet-shell::-webkit-scrollbar-thumb { background: #64748b; border: 3px solid #e2e8f0; border-radius: 999px; }
+        .sheet-shell::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .sheet-shell::-webkit-scrollbar-corner { background: #e2e8f0; }
         .sheet-grid { border-collapse: separate; border-spacing: 0; min-width: max-content; font-size: 12px; }
         .sheet-grid th, .sheet-grid td { min-width: 150px; max-width: 260px; height: 38px; padding: 7px 9px; border-right: 1px solid #dbe3ee; border-bottom: 1px solid #dbe3ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: white; }
         .sheet-grid thead th { position: sticky; top: 0; z-index: 20; min-height: 44px; height: 44px; background: #176149; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: .025em; white-space: normal; }
@@ -590,14 +595,14 @@
         </div>
     </div>
 
-    <div id="sheet-context-menu" data-html2canvas-ignore="true" class="sheet-context-menu hidden" role="menu" aria-label="Menu sel spreadsheet">
-        <button type="button" onclick="sheetClipboardAction('cut')"><i class="fa-solid fa-scissors w-4"></i>Potong</button>
-        <button type="button" onclick="sheetClipboardAction('copy')"><i class="fa-regular fa-copy w-4"></i>Salin</button>
-        <button type="button" onclick="sheetClipboardAction('paste')"><i class="fa-solid fa-paste w-4"></i>Tampal</button>
+    <div id="sheet-context-menu" data-html2canvas-ignore="true" class="sheet-context-menu hidden" role="menu" aria-label="Spreadsheet cell context menu">
+        <button type="button" onclick="sheetClipboardAction('cut')"><i class="fa-solid fa-scissors w-4"></i>Cut</button>
+        <button type="button" onclick="sheetClipboardAction('copy')"><i class="fa-regular fa-copy w-4"></i>Copy</button>
+        <button type="button" onclick="sheetClipboardAction('paste')"><i class="fa-solid fa-paste w-4"></i>Paste</button>
         <div class="my-1 border-t"></div>
-        <button type="button" onclick="clearActiveSheetCell()"><i class="fa-solid fa-eraser w-4"></i>Kosongkan kandungan</button>
-        <button type="button" onclick="addSheetRowFromContext()"><i class="fa-solid fa-plus w-4"></i>Tambah baris baharu</button>
-        <button type="button" class="danger" onclick="selectActiveRowForDelete()"><i class="fa-solid fa-trash-can w-4"></i>Padam baris ini</button>
+        <button type="button" onclick="clearActiveSheetCell()"><i class="fa-solid fa-eraser w-4"></i>Clear Contents</button>
+        <button type="button" onclick="addSheetRowFromContext()"><i class="fa-solid fa-plus w-4"></i>Insert New Row</button>
+        <button type="button" class="danger" onclick="selectActiveRowForDelete()"><i class="fa-solid fa-trash-can w-4"></i>Delete This Row</button>
         <div class="my-1 border-t"></div>
         <button type="button" onclick="applySheetFormat('bold')"><i class="fa-solid fa-bold w-4"></i>Bold</button>
         <button type="button" onclick="applySheetFormat('italic')"><i class="fa-solid fa-italic w-4"></i>Italic</button>

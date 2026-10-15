@@ -15,7 +15,7 @@ Laman ini mempunyai dua modul dalam sidebar responsif:
 - Medan formula `DEMAND PER DAY (M3)` dikunci daripada suntingan, dan data suction tank menggunakan header `CAPACITY ST (ML)`
 - Pentadbir menambah Kolam Balancing atau Kolam Servis melalui popup berpandu. Kod `BR-xxx` / `SR-xxx` dijana automatik, dan Kolam Servis dipautkan kepada Kolam Balancing utama serta kod outlet.
 - Setiap jadual mempunyai zoom 50% hingga 175%, nombor turutan, checkbox pilihan baris dan satu butang `PADAM PILIHAN` di bahagian atas. Pemadaman masih memerlukan nama rekod atau frasa pengesahan ditaip semula.
-- `KOLAM DETAILS` dan `MASTERLIST` mempunyai ribbon gaya spreadsheet untuk potong/salin/tampal, font, saiz, bold, italic, underline, warna dan penjajaran. Klik kanan pada sel membuka menu konteks bagi tindakan sel/baris yang lazim.
+- `KOLAM DETAILS` dan `MASTERLIST` mempunyai ribbon gaya spreadsheet untuk potong/salin/tampal, font, saiz, bold, italic, underline, warna dan penjajaran. Klik kanan pada sel membuka menu konteks berbahasa Inggeris bagi tindakan sel/baris yang lazim, dan scrollbar menegak kekal kelihatan di sebelah kanan jadual.
 - Kolum formula MASTERLIST L, M dan N dikunci daripada suntingan web.
 
 ## Uji di VS Code
