@@ -53,8 +53,11 @@ node scripts/sync-sheet-data.mjs
 Arahan yang sama tersedia melalui `Terminal > Run Task > Sync Full Google Sheet Data`.
 
 Arahan ini mengemas kini kesemua 75 rekod `KOLAM DETAILS` dan 552 rekod
-`MASTERLIST` berdasarkan kandungan semasa Google Sheet. Worker masih digunakan
-untuk data produksi selepas deployment.
+`MASTERLIST` berdasarkan kandungan semasa Google Sheet. Worker masih menjadi
+sumber utama untuk data produksi selepas deployment. Jika Worker belum mempunyai
+action yang diperlukan atau sambungan live gagal, laman GitHub Pages akan
+memaparkan snapshot terakhir ini secara automatik dengan label `snapshot` supaya
+dashboard tidak bertukar kepada nilai sifar.
 
 ## Sambungan `KOLAM DETAILS`
 

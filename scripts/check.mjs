@@ -84,6 +84,7 @@ if (!html.includes('#kolam-sheet-table { zoom: var(--kolam-zoom, 1); }')) throw 
 if (!html.includes('overflow-y: scroll; scrollbar-gutter: stable;')) throw new Error('Expected always-visible side scrollbar for sheet tables');
 if (!html.includes('Clear Contents') || !html.includes('Insert New Row') || !html.includes('Delete This Row')) throw new Error('Expected English spreadsheet context menu');
 if (!html.includes('function setKolamZoom(percent)')) throw new Error('Expected KOLAM DETAILS zoom handler');
+if (!html.includes('function loadDeployedSnapshotFallback(reason = \'\')') || !html.includes('rekod snapshot terakhir')) throw new Error('Expected hosted snapshot fallback when the live Worker is unavailable');
 if (!html.includes("openAddReservoirModal('balancing')") || !html.includes("openAddReservoirModal('service')")) throw new Error('Expected popup add buttons for balancing and service reservoirs');
 if (!html.includes('function confirmDeleteSheetRow()') || !html.includes('delete-row-confirmation')) throw new Error('Expected typed row-delete confirmation');
 if (!html.includes("openDeleteSelectedModal('kolam')") || !html.includes("openDeleteSelectedModal('masterlist')")) throw new Error('Expected toolbar delete buttons for selected rows');

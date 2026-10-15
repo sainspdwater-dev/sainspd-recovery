@@ -1302,11 +1302,16 @@
             restoreLocalSheetDraft('masterlist'); renderSheetTable('masterlist');
         }
 
-        function buildMasterlistFallback() {
+        function buildMasterlistFallback(reason = '') {
             const snapshot = window.PROTOTYPE_SHEET_DATA?.masterlist;
-            if (IS_LOCAL_PREVIEW && snapshot?.headers?.length && snapshot?.rows?.length) {
+            if (snapshot?.headers?.length && snapshot?.rows?.length) {
                 ingestMasterlistPayload(snapshot.rows, snapshot.headers);
-                showSheetNotice('masterlist', `${snapshot.rows.length.toLocaleString()} rekod penuh MASTERLIST · snapshot Google Sheet ${new Date(window.PROTOTYPE_SHEET_DATA.syncedAt).toLocaleString('ms-MY')}`, 'success');
+                const syncTime = new Date(window.PROTOTYPE_SHEET_DATA?.syncedAt);
+                const syncLabel = Number.isNaN(syncTime.getTime()) ? '-' : syncTime.toLocaleString('ms-MY');
+                const suffix = IS_LOCAL_PREVIEW
+                    ? `snapshot Google Sheet ${syncLabel}`
+                    : `snapshot terakhir ${syncLabel}${reason ? ` · Live: ${reason}` : ''}`;
+                showSheetNotice('masterlist', `${snapshot.rows.length.toLocaleString()} rekod penuh MASTERLIST · ${suffix}`, IS_LOCAL_PREVIEW ? 'success' : 'info');
                 return;
             }
             if (masterlistDataLoaded || !globalData?.length) return;
@@ -1334,7 +1339,7 @@
                 ingestMasterlistPayload(result.data || result.values || result.rows || result, result.headers);
                 showSheetNotice('masterlist', `${masterlistRawRows.length.toLocaleString()} rekod MASTERLIST dimuatkan.`, 'success');
             } catch (error) {
-                buildMasterlistFallback();
+                buildMasterlistFallback(error.message || 'Sambungan live tidak tersedia.');
                 if (!masterlistDataLoaded) showSheetNotice('masterlist', error.message || 'MASTERLIST tidak dapat dimuatkan.', 'error');
             }
         }
@@ -1981,6 +1986,29 @@
             return window.PROTOTYPE_SHEET_DATA;
         }
 
+        function loadDeployedSnapshotFallback(reason = '') {
+            const snapshot = window.PROTOTYPE_SHEET_DATA?.kolam;
+            if (!snapshot?.headers?.length || !snapshot?.rows?.length) return false;
+
+            ingestReservoirPayload(snapshot.rows, snapshot.headers);
+            const masterlist = window.PROTOTYPE_SHEET_DATA?.masterlist;
+            if (masterlist?.headers?.length && masterlist?.rows?.length) {
+                ingestMasterlistPayload(masterlist.rows, masterlist.headers);
+            }
+
+            const syncTime = new Date(window.PROTOTYPE_SHEET_DATA?.syncedAt);
+            const syncLabel = Number.isNaN(syncTime.getTime()) ? '-' : syncTime.toLocaleString('ms-MY');
+            const liveMessage = reason ? ` Sambungan live: ${reason}` : '';
+            updateDemandStatus(`${snapshot.rows.length.toLocaleString()} rekod snapshot terakhir`, 'success');
+            showSheetNotice('kolam', `${snapshot.rows.length.toLocaleString()} rekod penuh KOLAM DETAILS · snapshot terakhir ${syncLabel}.${liveMessage}`, 'info');
+            if (masterlist?.rows?.length) {
+                showSheetNotice('masterlist', `${masterlist.rows.length.toLocaleString()} rekod penuh MASTERLIST · snapshot terakhir ${syncLabel}.${liveMessage}`, 'info');
+            }
+            document.getElementById('last-updated').innerText = `Last Updated: ${syncLabel} (snapshot)`;
+            document.getElementById('demand-error').classList.add('hidden');
+            return true;
+        }
+
         async function fetchReservoirData(forceRefresh = false) {
             if (reservoirLoading) return;
             reservoirLoading = true; updateDemandStatus('Memuatkan KOLAM DETAILS...', 'loading');
@@ -2029,10 +2057,7 @@
                 if (!response.ok || !result.success) throw new Error(result.error || 'Data KOLAM DETAILS tidak tersedia.');
                 ingestReservoirPayload(result.data || result.values || result.rows || result, result.headers);
             } catch (error) {
-                if (IS_LOCAL_PREVIEW && !reservoirDataLoaded) {
-                    buildKolamPrototypeFallback();
-                    return;
-                }
+                if (loadDeployedSnapshotFallback(error.message || 'Sambungan live tidak tersedia.')) return;
                 updateDemandStatus('Data belum tersedia', 'error');
                 const box = document.getElementById('demand-error');
                 box.innerHTML = `<div class="flex gap-3"><i class="fa-solid fa-triangle-exclamation mt-0.5"></i><div><b>Data KOLAM DETAILS tidak dapat dimuatkan.</b><p class="mt-1 text-xs">${escapeHtml(error.message || 'Sila cuba semula atau hubungi pentadbir sistem.')}</p></div></div>`;
