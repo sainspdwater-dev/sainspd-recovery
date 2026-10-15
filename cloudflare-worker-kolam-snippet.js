@@ -101,7 +101,7 @@ async function updateSheetCells(body, env) {
     const row = Number(update.row), column = Number(update.column);
     const maxColumn = sheetName === 'KOLAM DETAILS' ? 37 : 22;
     if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || column > maxColumn) throw new Error('Alamat sel tidak sah.');
-    if ((sheetName === 'KOLAM DETAILS' && column === 5) || (sheetName === 'MASTERLIST' && [12, 13, 14].includes(column))) throw new Error('Kolum formula tidak boleh diedit melalui web.');
+    if ((sheetName === 'KOLAM DETAILS' && column === 5) || (sheetName === 'MASTERLIST' && [6, 12, 13, 14].includes(column))) throw new Error('Kolum formula tidak boleh diedit melalui web.');
     return { range: `'${sheetName}'!${columnToLetter(column)}${row}`, values: [[update.value ?? '']] };
   });
   const accessToken = await getGoogleAccessToken(env);
@@ -242,7 +242,11 @@ async function uploadReservoirImage(body, env) {
 
 async function clearSheetCaches(sheetName, env) {
   if (!env.GAS_CACHE) return;
-  await Promise.all([env.GAS_CACHE.delete(`sheet-table:${sheetName}:v1`), sheetName === 'KOLAM DETAILS' ? env.GAS_CACHE.delete('kolam-details:v1') : Promise.resolve()]);
+  await Promise.all([
+    env.GAS_CACHE.delete(`sheet-table:${sheetName}:v1`),
+    sheetName === 'KOLAM DETAILS' ? env.GAS_CACHE.delete('kolam-details:v1') : Promise.resolve(),
+    env.GAS_CACHE.put('DATA_VERSION', Date.now().toString())
+  ]);
 }
 
 async function saveReservoirKml(body, env) {

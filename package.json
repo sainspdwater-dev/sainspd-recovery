@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "check": "node scripts/check.mjs",
-    "sync-data": "node scripts/sync-sheet-data.mjs"
+    "sync-data": "node scripts/sync-sheet-data.mjs",
+    "build-worker": "node scripts/build-integrated-worker.mjs"
   }
 }

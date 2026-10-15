@@ -1,0 +1,17 @@
+name = "sains-pd-api"
+compatibility_date = "2026-08-11"
+workers_dev = true
+preview_urls = false
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
+[[kv_namespaces]]
+binding = "GAS_CACHE"
+id = "39f4d665de3749d59700f59a5624ebf7"
+
+[triggers]
+crons = ["*/20 * * * *"]

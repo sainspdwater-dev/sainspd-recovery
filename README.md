@@ -114,3 +114,20 @@ dan KML disimpan dalam `localStorage` supaya fungsi boleh diuji sebelum deployme
 
 Untuk menguji antaramuka secara lokal, hidangkan folder ini melalui pelayan HTTP
 (bukan terus melalui `file://`) supaya polisi CORS sama seperti GitHub Pages.
+
+## Deploy Worker Google Sheet
+
+Worker produksi mengekalkan action login dan recovery asal, kemudian
+`scripts/build-integrated-worker.mjs` menyuntik action Demand Bekalan Air yang
+terdapat dalam `cloudflare-worker-kolam-snippet.js`. Konfigurasi
+`wrangler.worker.toml` mengekalkan KV, jadual 20 minit dan observability.
+
+```powershell
+node scripts/build-integrated-worker.mjs --base <worker-asal.js> --output <worker-integrated.js>
+npx wrangler deploy <worker-integrated.js> --config wrangler.worker.toml --keep-vars
+```
+
+Gunakan `--keep-vars` supaya `GOOGLE_CLIENT_EMAIL`, `SHEET_ID` dan rahsia
+`GOOGLE_PRIVATE_KEY` pada Worker tidak dipadam. Selepas deployment, uji sekurang-kurangnya
+`getReservoirData`, `getSheetTable`, suntingan `updateSheetCells`, penambahan satu
+baris sementara dan pemadaman semula baris tersebut.

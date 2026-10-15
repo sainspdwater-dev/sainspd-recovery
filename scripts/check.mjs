@@ -12,6 +12,10 @@ new Function(workerSource);
 for (const required of ['saveReservoirKml', 'getReservoirKmlOverrides', 'updateSheetCells', 'deleteSheetRow', 'deleteSheetRows', 'uploadReservoirImage', 'prepareNewSheetRows', 'applySheetFormats']) {
   if (!workerSource.includes(required)) throw new Error(`Missing Worker persistence function: ${required}`);
 }
+if (!workerSource.includes("[6, 12, 13, 14].includes(column)")) throw new Error('Expected Worker to protect MASTERLIST DUPLICATE and formula columns');
+if (!workerSource.includes("env.GAS_CACHE.put('DATA_VERSION'")) throw new Error('Expected sheet writes to publish a new data version');
+const workerBuildSource = await readFile('scripts/build-integrated-worker.mjs', 'utf8');
+if (!workerBuildSource.includes('sheetWriteActions') || !workerBuildSource.includes('verifySession(request, env)')) throw new Error('Expected authenticated Worker action integration');
 const manifestSource = await readFile('assets/kml-kolam-manifest.js', 'utf8');
 new Function(manifestSource);
 const manifestContext = { window: {} };
