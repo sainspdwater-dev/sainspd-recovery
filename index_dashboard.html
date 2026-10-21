@@ -2196,38 +2196,30 @@
             return result;
         }
 
+        function collapseBalancingMetricRows(records) {
+            // A balancing reservoir is the parent/summary record. When both the
+            // parent and its service reservoirs are visible, count only the parent
+            // so demand, connections and capacity are not counted twice.
+            const visibleRecords = new Set(records);
+            return collapseOutletDemandRows(records.filter(record => {
+                if (isBalancingReservoir(record)) return true;
+                const parent = balancingParentFor(record);
+                return !parent || !visibleRecords.has(parent);
+            }));
+        }
+
         function demandMetricRows() {
-            const search = String(document.getElementById('demand-search')?.value || '').trim();
-            const supply = document.getElementById('demand-supply-filter')?.value || 'ALL';
-            const secondary = document.getElementById('demand-secondary-filter')?.value || 'ALL';
-            const status = document.getElementById('demand-status-filter')?.value || 'ALL';
-            const reservoir = document.getElementById('demand-reservoir-filter')?.value || 'ALL';
-
-            // A secondary, reservoir, search or status selection is already a detailed view.
-            if (secondary !== 'ALL' || reservoir !== 'ALL' || search || status !== 'ALL') return collapseOutletDemandRows(filteredReservoirRows);
-
-            // At supply level, use the balancing/parent reservoir total instead of
-            // adding the same demand again from every service reservoir below it.
-            if (supply !== 'ALL') {
-                const parent = reservoirRows.find(record => isBalancingReservoir(record) && canonicalReservoirName(record.name) === canonicalReservoirName(supply));
-                if (parent) return [parent];
-            }
-
-            // The all-supply view follows the same rule: keep parent and standalone
-            // records, while excluding children whose demand is already rolled up.
-            return collapseOutletDemandRows(filteredReservoirRows.filter(record => isBalancingReservoir(record) || !balancingParentFor(record)));
+            return collapseBalancingMetricRows(filteredReservoirRows);
         }
 
         function renderDemandKpis() {
             const metricRows = demandMetricRows();
             const metricTotal = (key) => metricRows.reduce((sum, item) => sum + Number(item[key] || 0), 0);
-            const detailedView = (document.getElementById('demand-secondary-filter')?.value || 'ALL') !== 'ALL' || (document.getElementById('demand-reservoir-filter')?.value || 'ALL') !== 'ALL' || String(document.getElementById('demand-search')?.value || '').trim() || (document.getElementById('demand-status-filter')?.value || 'ALL') !== 'ALL';
-            const capacityRows = detailedView ? filteredReservoirRows : metricRows;
             document.getElementById('d-kpi-count').innerText = filteredReservoirRows.length.toLocaleString();
             document.getElementById('d-kpi-day').innerText = `${formatMetric(metricTotal('demandDay'))} m³`;
             document.getElementById('d-kpi-month').innerText = `${formatMetric(metricTotal('demandMonth'))} m³`;
             document.getElementById('d-kpi-connection').innerText = formatMetric(metricTotal('connections'), 0);
-            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(capacityRows.reduce((sum, item) => sum + Number(item.serviceCapacityMl || 0), 0))} ML`;
+            document.getElementById('d-kpi-capacity').innerText = `${formatMetric(metricTotal('serviceCapacityMl'))} ML`;
         }
 
         function statusBadge(record) {

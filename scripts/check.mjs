@@ -49,6 +49,10 @@ if (new Set(reservoirCodes).size !== prototypeData.kolam.rows.length) throw new 
 const balancingRows = prototypeData.kolam.rows.filter(row => String(row[kolamHeaderIndex['JENIS KOLAM']] || '').trim() === 'KOLAM BALANCING');
 if (balancingRows.length !== 6) throw new Error(`Expected 6 explicit balancing reservoirs, found ${balancingRows.length}`);
 if (balancingRows.some(row => String(row[kolamHeaderIndex['KOLAM BALANCING UTAMA']] || '').trim())) throw new Error('Balancing reservoirs must not have a parent code');
+const activeBalancingConnections = balancingRows
+  .filter(row => String(row[kolamHeaderIndex['SERVICE RESERVOIR STATUS']] || row[kolamHeaderIndex['STATUS ST']] || '').trim().toUpperCase() === 'ACTIVE')
+  .reduce((total, row) => total + (Number(String(row[kolamHeaderIndex['TOTAL CONNECTION']] || '').replace(/,/g, '')) || 0), 0);
+if (activeBalancingConnections !== 54194) throw new Error(`Expected parent-only active connection total 54194, received ${activeBalancingConnections}`);
 const balancingCodes = new Set(balancingRows.map(row => String(row[kolamHeaderIndex['KOD KOLAM']] || '').trim()));
 const invalidServiceParent = prototypeData.kolam.rows.find(row => String(row[kolamHeaderIndex['JENIS KOLAM']] || '').trim() === 'KOLAM SERVIS' && !balancingCodes.has(String(row[kolamHeaderIndex['KOLAM BALANCING UTAMA']] || '').trim()) && !String(row[kolamHeaderIndex['KOLAM BALANCING UTAMA']] || '').startsWith('EXT-'));
 if (invalidServiceParent) throw new Error(`Invalid service parent for ${invalidServiceParent[kolamHeaderIndex['RESERVOIR NAME']]}`);
@@ -74,8 +78,8 @@ const bukitTunggalActual = {
 for (const [key, expected] of Object.entries(bukitTunggalExpected)) {
   if (bukitTunggalActual[key] !== expected) throw new Error(`Expected BUKIT TUNGGAL ${key} ${expected} from balancing row, received ${bukitTunggalActual[key]}`);
 }
-if (!html.includes("capacityRows.reduce((sum, item) => sum + Number(item.serviceCapacityMl || 0), 0)")) throw new Error('Expected capacity KPI to preserve physical reservoir capacity rows');
-if (!html.includes('collapseOutletDemandRows(filteredReservoirRows)')) throw new Error('Expected outlet demand grouping to prevent duplicate demand totals');
+if (!html.includes('function collapseBalancingMetricRows(records)') || !html.includes('return collapseBalancingMetricRows(filteredReservoirRows)')) throw new Error('Expected balancing parents to replace visible service children in dashboard totals');
+if (!html.includes("formatMetric(metricTotal('serviceCapacityMl'))")) throw new Error('Expected capacity KPI to follow the same parent-only aggregation rule');
 if (!html.includes('.tank-marker.balancing { background: #7c3aed; }')) throw new Error('Expected purple balancing-reservoir map marker style');
 if (!html.includes("isBalancingReservoir(r) ? 'balancing' : reservoirStatusKind(r)")) throw new Error('Expected balancing reservoirs to use the purple marker class');
 if (!html.includes('Balancing Reservoir</span>')) throw new Error('Expected balancing-reservoir map legend');
